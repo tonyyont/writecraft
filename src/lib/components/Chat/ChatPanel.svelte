@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { emit } from '@tauri-apps/api/event';
   import { chatStore } from '$lib/stores/chat.svelte';
   import { documentStore } from '$lib/stores/document.svelte';
+  import { apiKeyStore } from '$lib/stores/apiKey.svelte';
   import { sendMessageWithTools, type ToolMessageCallbacks } from '$lib/services/claude';
   import { buildEnrichedSystemPrompt, type PromptContext } from '$lib/prompts/system';
   import { ALL_TOOLS } from '$lib/tools/definitions';
@@ -18,6 +20,13 @@
 
   // Error state for displaying API errors
   let errorMessage = $state<string | null>(null);
+  // Track if error is related to missing/invalid API key
+  let isApiKeyError = $state(false);
+
+  // Open settings dialog (emit event that MenuBar listens to)
+  async function openSettings() {
+    await emit('menu-event', 'settings');
+  }
 
   // Panel width state for resizing
   let panelWidth = $state(360);
@@ -274,6 +283,19 @@
       const message = err instanceof Error ? err.message : String(err);
       errorMessage = message;
 
+      // Check if this is an API key related error
+      const lowerMessage = message.toLowerCase();
+      isApiKeyError = lowerMessage.includes('no api key') ||
+                      lowerMessage.includes('invalid api key') ||
+                      lowerMessage.includes('api key') ||
+                      lowerMessage.includes('unauthorized') ||
+                      lowerMessage.includes('401');
+
+      // Update the API key store if key is invalid
+      if (isApiKeyError) {
+        apiKeyStore.markInvalid(message);
+      }
+
       // Update the current assistant message with error if it exists and is empty
       if (currentAssistantMessageId) {
         const lastMessage = chatStore.messages.find(m => m.id === currentAssistantMessageId);
@@ -281,7 +303,8 @@
           const content = lastMessage.content;
           const isEmpty = typeof content === 'string' ? content === '' : content.length === 0;
           if (isEmpty) {
-            chatStore.updateMessage(currentAssistantMessageId, `Error: ${message}`);
+            // Remove the empty message instead of showing error there
+            chatStore.removeMessage(currentAssistantMessageId);
           }
         }
       }
@@ -343,9 +366,22 @@
         <MessageList messages={chatStore.messages} streamingMessageId={chatStore.streamingMessageId} />
 
         {#if errorMessage}
-          <div class="error-banner">
-            <span class="error-text">{errorMessage}</span>
-            <button class="error-dismiss" onclick={() => errorMessage = null}>
+          <div class="error-banner" class:api-key-error={isApiKeyError}>
+            <div class="error-content">
+              <span class="error-text">
+                {#if isApiKeyError}
+                  API key not configured or invalid
+                {:else}
+                  {errorMessage}
+                {/if}
+              </span>
+              {#if isApiKeyError}
+                <button class="error-action" onclick={openSettings}>
+                  Configure API Key
+                </button>
+              {/if}
+            </div>
+            <button class="error-dismiss" onclick={() => { errorMessage = null; isApiKeyError = false; }} aria-label="Dismiss error">
               <svg width="12" height="12" viewBox="0 0 14 14">
                 <path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="1.5"/>
               </svg>
@@ -461,19 +497,51 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
+    padding: 10px 12px;
     margin: 0 12px 8px 12px;
     background: #fee2e2;
     border: 1px solid #fecaca;
-    border-radius: 6px;
+    border-radius: 8px;
     flex-shrink: 0;
+    gap: 8px;
+  }
+
+  .error-banner.api-key-error {
+    background: #fef3c7;
+    border-color: #fcd34d;
+  }
+
+  .error-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
   }
 
   .error-text {
     font-size: 13px;
     color: #b91c1c;
-    flex: 1;
-    margin-right: 8px;
+  }
+
+  .error-banner.api-key-error .error-text {
+    color: #92400e;
+  }
+
+  .error-action {
+    padding: 6px 12px;
+    background: #007aff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    align-self: flex-start;
+    transition: background 0.15s;
+  }
+
+  .error-action:hover {
+    background: #0066d6;
   }
 
   .error-dismiss {
@@ -540,6 +608,23 @@
 
     .error-dismiss:hover {
       background: rgba(252, 165, 165, 0.1);
+    }
+
+    .error-banner.api-key-error {
+      background: #422006;
+      border-color: #854d0e;
+    }
+
+    .error-banner.api-key-error .error-text {
+      color: #fcd34d;
+    }
+
+    .error-action {
+      background: #5ac8fa;
+    }
+
+    .error-action:hover {
+      background: #4ab8ea;
     }
   }
 </style>

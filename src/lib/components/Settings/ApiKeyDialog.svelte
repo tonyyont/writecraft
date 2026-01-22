@@ -1,5 +1,6 @@
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core';
+  import { apiKeyStore } from '$lib/stores/apiKey.svelte';
 
   // Props
   interface Props {
@@ -85,6 +86,8 @@
       apiKey = '';
       showKey = false;
       testResult = 'success';
+      // Sync with global store
+      apiKeyStore.onKeySaved();
     } catch (e) {
       testResult = 'error';
       errorMessage = e instanceof Error ? e.message : String(e);
@@ -140,6 +143,8 @@
       hasExistingKey = false;
       apiKey = '';
       testResult = null;
+      // Sync with global store
+      apiKeyStore.onKeyDeleted();
     } catch (e) {
       errorMessage = e instanceof Error ? e.message : String(e);
     } finally {

@@ -4,9 +4,18 @@
   import MetadataPanel from '$lib/components/MetadataPanel.svelte';
   import Editor from '$lib/components/Editor/Editor.svelte';
   import ChatPanel from '$lib/components/Chat/ChatPanel.svelte';
+  import ApiKeyOnboarding from '$lib/components/Settings/ApiKeyOnboarding.svelte';
   import { documentStore } from '$lib/stores/document.svelte';
+  import { apiKeyStore } from '$lib/stores/apiKey.svelte';
 
-  onMount(() => {
+  // Track if we've finished initial API key check
+  let isInitialized = $state(false);
+
+  onMount(async () => {
+    // Check for API key on startup
+    await apiKeyStore.checkApiKey();
+    isInitialized = true;
+
     // Flush pending saves when the window is about to close
     const handleBeforeUnload = () => {
       // Note: We can't await here, but we trigger the save
@@ -28,7 +37,15 @@
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   });
+
+  function handleOnboardingComplete() {
+    // API key was saved, the store is already updated
+  }
 </script>
+
+{#if isInitialized && apiKeyStore.needsSetup}
+  <ApiKeyOnboarding onComplete={handleOnboardingComplete} />
+{/if}
 
 <div class="app-container">
   <MenuBar />

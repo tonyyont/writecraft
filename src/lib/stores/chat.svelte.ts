@@ -39,6 +39,12 @@ function updateMessage(id: string, content: MessageContent): void {
   syncToSidecar();
 }
 
+// Remove a message by ID
+function removeMessage(id: string): void {
+  messages = messages.filter(msg => msg.id !== id);
+  syncToSidecar();
+}
+
 // Add tool result as a user message with tool_result content blocks
 function addToolResults(results: ToolResult[]): ChatMessage {
   const blocks: ContentBlock[] = results.map(result => ({
@@ -174,6 +180,7 @@ export const chatStore = {
 
   addMessage,
   updateMessage,
+  removeMessage,
   addToolResults,
   addAssistantWithToolUses,
   clearHistory,
