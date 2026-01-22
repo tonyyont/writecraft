@@ -148,8 +148,10 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 12px 8px 12px;
+    height: 44px;
+    padding: 0 12px;
     flex-shrink: 0;
+    border-bottom: 1px solid #e0e0e0;
   }
 
   .panel-title {
@@ -180,7 +182,7 @@
   .panel-content {
     flex: 1;
     overflow-y: auto;
-    padding: 0 12px 12px 12px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -194,7 +196,7 @@
   .section-label {
     font-size: 11px;
     font-weight: 500;
-    color: #999;
+    color: #888;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 6px;
@@ -208,10 +210,21 @@
     height: 100%;
     cursor: ew-resize;
     background: transparent;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s ease;
   }
 
-  .resize-handle:hover {
+  .resize-handle::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 1px;
+    height: 100%;
+    background: #e0e0e0;
+    transition: background-color 0.2s ease;
+  }
+
+  .resize-handle:hover::after {
     background: #007aff;
   }
 
@@ -221,8 +234,12 @@
       border-right-color: #333;
     }
 
+    .panel-header {
+      border-bottom-color: #333;
+    }
+
     .expand-button {
-      color: #aaa;
+      color: #a0a0a0;
     }
 
     .expand-button:hover {
@@ -230,11 +247,11 @@
     }
 
     .panel-title {
-      color: #888;
+      color: #a0a0a0;
     }
 
     .collapse-button {
-      color: #aaa;
+      color: #a0a0a0;
     }
 
     .collapse-button:hover {
@@ -242,7 +259,15 @@
     }
 
     .section-label {
-      color: #666;
+      color: #888;
+    }
+
+    .resize-handle::after {
+      background: #333;
+    }
+
+    .resize-handle:hover::after {
+      background: #007aff;
     }
   }
 </style>

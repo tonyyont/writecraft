@@ -108,11 +108,13 @@
   .app-bar {
     display: flex;
     align-items: center;
-    height: 38px;
-    background: transparent;
-    padding: 0 12px;
+    height: 44px;
+    background: var(--color-bg, #ffffff);
+    padding: 0 16px;
     user-select: none;
     -webkit-app-region: drag;
+    border-bottom: 1px solid #e0e0e0;
+    box-sizing: border-box;
   }
 
   .traffic-light-spacer {
@@ -139,6 +141,11 @@
   }
 
   @media (prefers-color-scheme: dark) {
+    .app-bar {
+      background: var(--color-bg, #1a1a1a);
+      border-bottom-color: #333;
+    }
+
     .filename {
       color: #e0e0e0;
     }

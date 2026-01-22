@@ -380,13 +380,13 @@
   .resize-handle {
     width: 4px;
     cursor: ew-resize;
-    background: transparent;
-    transition: background-color 0.2s;
+    background: linear-gradient(to right, #e0e0e0 0px, #e0e0e0 1px, transparent 1px);
+    transition: background 0.2s ease;
     flex-shrink: 0;
   }
 
   .resize-handle:hover {
-    background: #007aff;
+    background: linear-gradient(to right, #007aff 0px, #007aff 1px, transparent 1px);
   }
 
   .chat-panel {
@@ -402,10 +402,12 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 16px;
+    height: 44px;
+    padding: 0 12px;
     border-bottom: 1px solid #e0e0e0;
     background: #fafafa;
     flex-shrink: 0;
+    box-sizing: border-box;
   }
 
   .panel-title {
@@ -415,8 +417,8 @@
   }
 
   .close-button {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -424,11 +426,12 @@
     border: none;
     color: #666;
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
   }
 
   .close-button:hover {
-    background: #e8e8e8;
+    background: rgba(0, 0, 0, 0.06);
   }
 
   .open-button {
@@ -492,6 +495,14 @@
   }
 
   @media (prefers-color-scheme: dark) {
+    .resize-handle {
+      background: linear-gradient(to right, #333 0px, #333 1px, transparent 1px);
+    }
+
+    .resize-handle:hover {
+      background: linear-gradient(to right, #007aff 0px, #007aff 1px, transparent 1px);
+    }
+
     .chat-panel {
       background: #1e1e1e;
       border-left-color: #333;
@@ -511,7 +522,7 @@
     }
 
     .close-button:hover {
-      background: #3a3a3a;
+      background: rgba(255, 255, 255, 0.08);
     }
 
     .error-banner {

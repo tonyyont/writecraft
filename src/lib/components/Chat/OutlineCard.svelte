@@ -146,6 +146,7 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   }
 
   .card.editing {
@@ -156,24 +157,32 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 12px;
-    background: #f8f8f8;
+    padding: 8px 12px;
+    background: #fafafa;
+    border-top: 1px solid rgba(0, 0, 0, 0.03);
     cursor: pointer;
     user-select: none;
     flex-shrink: 0;
+    transition: background-color 0.15s ease;
+  }
+
+  .card-header:hover {
+    background: #f5f5f5;
   }
 
   .card-title {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 13px;
+    gap: 8px;
+    font-size: 11px;
     font-weight: 500;
     color: #333;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
 
   .icon {
-    transition: transform 0.2s;
+    transition: transform 0.2s ease;
   }
 
   .icon.rotated {
@@ -387,11 +396,17 @@
   @media (prefers-color-scheme: dark) {
     .card {
       background: #2a2a2a;
-      border-color: #3a3a3a;
+      border-color: #333;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
 
     .card-header {
-      background: #333;
+      background: #252525;
+      border-top-color: rgba(255, 255, 255, 0.03);
+    }
+
+    .card-header:hover {
+      background: #2a2a2a;
     }
 
     .card-title {
@@ -399,12 +414,12 @@
     }
 
     .edit-button {
-      border-color: #555;
+      border-color: #444;
       color: #aaa;
     }
 
     .edit-button:hover {
-      background: #444;
+      background: #3a3a3a;
     }
 
     .close-button {
@@ -412,7 +427,7 @@
     }
 
     .close-button:hover {
-      background: #444;
+      background: #3a3a3a;
     }
 
     .prompt-title {
@@ -435,30 +450,30 @@
     }
 
     .remove-button:hover {
-      background: #444;
+      background: #3a3a3a;
     }
 
     .add-button {
-      border-color: #555;
+      border-color: #444;
       color: #aaa;
     }
 
     .add-button:hover {
-      background: #333;
+      background: #2a2a2a;
     }
 
     .form-actions {
-      border-top-color: #3a3a3a;
-      background: #333;
+      border-top-color: #333;
+      background: #252525;
     }
 
     .btn-cancel {
-      border-color: #555;
+      border-color: #444;
       color: #aaa;
     }
 
     .btn-cancel:hover {
-      background: #444;
+      background: #3a3a3a;
     }
   }
 </style>

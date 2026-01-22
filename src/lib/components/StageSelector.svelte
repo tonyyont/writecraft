@@ -18,22 +18,26 @@
 {#if documentStore.sidecar}
   <div class="stage-selector">
     {#each stages as stage, index}
+      {@const isCompleted = stages.indexOf(documentStore.sidecar.stage) > index}
+      {@const isActive = documentStore.sidecar.stage === stage}
       <button
         class="stage-pill"
-        class:active={documentStore.sidecar.stage === stage}
-        class:completed={stages.indexOf(documentStore.sidecar.stage) > index}
+        class:active={isActive}
+        class:completed={isCompleted}
         onclick={() => handleStageChange(stage)}
         title={stageDescriptions[stage]}
       >
-        <span class="stage-number">{index + 1}</span>
+        <span class="stage-indicator">
+          {#if isCompleted}
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2.5 6L5 8.5L9.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          {:else}
+            {index + 1}
+          {/if}
+        </span>
         <span class="stage-name">{formatStageName(stage)}</span>
       </button>
-      {#if index < stages.length - 1}
-        <div
-          class="stage-connector"
-          class:completed={stages.indexOf(documentStore.sidecar.stage) > index}
-        ></div>
-      {/if}
     {/each}
   </div>
 {/if}
@@ -42,7 +46,7 @@
   .stage-selector {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
     -webkit-app-region: no-drag;
   }
 
@@ -50,94 +54,100 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 8px;
+    padding: 8px 12px;
     border: none;
     background: transparent;
-    border-radius: 6px;
+    border-radius: 4px;
     font-size: 12px;
     cursor: pointer;
     color: #666;
-    transition: all 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease;
     white-space: nowrap;
     text-align: left;
   }
 
   .stage-pill:hover {
-    background: #e8e8e8;
+    background: #f5f5f5;
   }
 
   .stage-pill.active {
-    background: #333;
+    background: #007aff;
     color: #fff;
   }
 
-  .stage-pill.active .stage-number {
+  .stage-pill.active:hover {
+    background: #0066d6;
+  }
+
+  .stage-pill.active .stage-indicator {
     background: rgba(255, 255, 255, 0.2);
     color: #fff;
   }
 
   .stage-pill.completed:not(.active) {
-    color: #2e7d32;
+    color: #34c759;
   }
 
-  .stage-pill.completed:not(.active) .stage-number {
-    background: #a5d6a7;
-    color: #1b5e20;
+  .stage-pill.completed:not(.active) .stage-indicator {
+    background: rgba(52, 199, 89, 0.15);
+    color: #34c759;
   }
 
-  .stage-number {
+  .stage-indicator {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
-    background: #e0e0e0;
-    font-size: 10px;
-    font-weight: 600;
+    background: #e8e8e8;
+    font-size: 12px;
+    font-weight: 500;
     color: #666;
     flex-shrink: 0;
+    transition: background 0.15s ease, color 0.15s ease;
   }
 
   .stage-name {
+    font-size: 12px;
     font-weight: 500;
-  }
-
-  .stage-connector {
-    display: none;
   }
 
   @media (prefers-color-scheme: dark) {
     .stage-pill {
-      color: #aaa;
+      color: #999;
     }
 
     .stage-pill:hover {
-      background: #333;
+      background: #2a2a2a;
     }
 
     .stage-pill.active {
-      background: #0066cc;
+      background: #007aff;
       color: #fff;
     }
 
-    .stage-pill.active .stage-number {
+    .stage-pill.active:hover {
+      background: #0066d6;
+    }
+
+    .stage-pill.active .stage-indicator {
       background: rgba(255, 255, 255, 0.2);
       color: #fff;
     }
 
     .stage-pill.completed:not(.active) {
-      color: #81c784;
+      color: #32d74b;
     }
 
-    .stage-pill.completed:not(.active) .stage-number {
-      background: #2e5a33;
-      color: #a5d6a7;
+    .stage-pill.completed:not(.active) .stage-indicator {
+      background: rgba(50, 215, 75, 0.15);
+      color: #32d74b;
     }
 
-    .stage-number {
-      background: #444;
-      color: #aaa;
+    .stage-indicator {
+      background: #3a3a3a;
+      color: #999;
     }
   }
 </style>

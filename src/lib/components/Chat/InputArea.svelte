@@ -101,9 +101,15 @@
     align-items: flex-end;
     gap: 8px;
     background: #fff;
-    border: 1px solid #d0d0d0;
+    border: 1px solid #e0e0e0;
     border-radius: 8px;
     padding: 8px 8px 8px 12px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .input-container:focus-within {
+    border-color: #007aff;
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.4);
   }
 
   textarea {
@@ -129,7 +135,7 @@
   }
 
   textarea:disabled {
-    opacity: 0.6;
+    color: #999;
     cursor: not-allowed;
   }
 
@@ -154,38 +160,46 @@
 
   .send-button:disabled {
     background: #ccc;
+    color: #999;
     cursor: not-allowed;
   }
 
   .loading-indicator {
     display: flex;
     justify-content: center;
-    gap: 4px;
-    padding: 8px 0 0;
+    gap: 6px;
+    padding: 10px 0 2px;
   }
 
   .dot {
-    width: 6px;
-    height: 6px;
-    background: #999;
+    width: 5px;
+    height: 5px;
+    background: #007aff;
     border-radius: 50%;
-    animation: bounce 1.4s infinite ease-in-out both;
+    animation: pulse 1.5s infinite ease-in-out;
+    opacity: 0.6;
   }
 
   .dot:nth-child(1) {
-    animation-delay: -0.32s;
+    animation-delay: 0s;
   }
 
   .dot:nth-child(2) {
-    animation-delay: -0.16s;
+    animation-delay: 0.2s;
   }
 
-  @keyframes bounce {
-    0%, 80%, 100% {
-      transform: scale(0);
+  .dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 0.3;
+      transform: scale(0.9);
     }
-    40% {
-      transform: scale(1);
+    50% {
+      opacity: 1;
+      transform: scale(1.1);
     }
   }
 
@@ -197,7 +211,11 @@
 
     .input-container {
       background: #333;
-      border-color: #444;
+      border-color: #333;
+    }
+
+    .input-container:focus-within {
+      border-color: #007aff;
     }
 
     textarea {

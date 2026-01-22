@@ -136,7 +136,22 @@
 <div class="message-list" bind:this={listRef}>
   {#if messages.length === 0}
     <div class="empty-state">
-      <p>No messages yet. Start a conversation!</p>
+      <div class="empty-icon">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="8" width="40" height="28" rx="4" stroke="currentColor" stroke-width="2" fill="none"/>
+          <circle cx="16" cy="22" r="2" fill="currentColor"/>
+          <circle cx="24" cy="22" r="2" fill="currentColor"/>
+          <circle cx="32" cy="22" r="2" fill="currentColor"/>
+          <path d="M12 36L8 44V36H12Z" stroke="currentColor" stroke-width="2" fill="none"/>
+        </svg>
+      </div>
+      <h3 class="empty-headline">Start a conversation</h3>
+      <p class="empty-subtext">Ask a question or share what you're working on</p>
+      <div class="empty-suggestions">
+        <span class="suggestion">Write code</span>
+        <span class="suggestion">Explain concepts</span>
+        <span class="suggestion">Debug issues</span>
+      </div>
     </div>
   {:else}
     {#each messages as message (message.id)}
@@ -184,16 +199,76 @@
   .empty-state {
     flex: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 12px;
+    color: #666;
+    text-align: center;
+    padding: 16px;
+  }
+
+  .empty-icon {
     color: #999;
+    margin-bottom: 4px;
+  }
+
+  .empty-headline {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+  }
+
+  .empty-subtext {
     font-size: 14px;
+    color: #666;
+    margin: 0;
+  }
+
+  .empty-suggestions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .suggestion {
+    font-size: 12px;
+    padding: 4px 12px;
+    background: #f0f0f0;
+    color: #666;
+    border-radius: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .empty-state {
+      color: #a0a0a0;
+    }
+
+    .empty-icon {
+      color: #666;
+    }
+
+    .empty-headline {
+      color: #e0e0e0;
+    }
+
+    .empty-subtext {
+      color: #a0a0a0;
+    }
+
+    .suggestion {
+      background: #333;
+      color: #a0a0a0;
+    }
   }
 
   .message {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
   }
 
   .message.user {
@@ -214,11 +289,10 @@
 
   /* User messages: subtle speech bubble */
   .message.user .message-content {
-    padding: 10px 14px;
+    padding: 12px 16px;
     background: #404040;
     color: #f5f5f5;
     border-radius: 16px;
-    border-bottom-right-radius: 4px;
   }
 
   /* Assistant messages: no bubble, free-flowing text */
@@ -245,8 +319,14 @@
   }
 
   .timestamp {
-    font-size: 11px;
-    color: #6b7280;
+    font-size: 12px;
+    color: #666;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .timestamp {
+      color: #a0a0a0;
+    }
   }
 
   .message.user .timestamp {
@@ -256,8 +336,8 @@
   .tool-uses {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    margin-top: 4px;
+    gap: 8px;
+    margin-top: 8px;
   }
 
   /* Markdown styles */

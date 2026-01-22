@@ -291,8 +291,14 @@
             <div class="recents-list">
               {#each recentsStore.files as file}
                 <button class="recent-item" onclick={() => handleOpenRecent(file.path)}>
-                  <span class="recent-name">{file.name}</span>
-                  <span class="recent-path">{recentsStore.getDirectory(file.path)}</span>
+                  <svg class="recent-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                  </svg>
+                  <div class="recent-info">
+                    <span class="recent-name">{file.name}</span>
+                    <span class="recent-path">{recentsStore.getDirectory(file.path)}</span>
+                  </div>
                 </button>
               {/each}
             </div>
@@ -320,16 +326,19 @@
 
   .editor-toolbar {
     display: flex;
+    align-items: center;
     gap: 4px;
-    padding: 8px 16px;
+    height: 44px;
+    padding: 0 16px;
     border-bottom: 1px solid #e0e0e0;
     background: #fafafa;
+    box-sizing: border-box;
   }
 
   .mode-toggle {
     padding: 4px 12px;
-    border: 1px solid #ddd;
-    background: #fff;
+    border: 1px solid #e0e0e0;
+    background: transparent;
     border-radius: 4px;
     font-size: 12px;
     cursor: pointer;
@@ -339,6 +348,12 @@
 
   .mode-toggle:hover {
     background: #f0f0f0;
+    border-color: #ccc;
+  }
+
+  .mode-toggle:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0,122,255,0.4);
   }
 
   .mode-toggle.active {
@@ -374,10 +389,13 @@
     background: #fff;
     color: #333;
     box-sizing: border-box;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
   }
 
   .source-editor:focus {
     outline: none;
+    background: #fafbfc;
+    box-shadow: inset 0 0 0 1px #e0e0e0;
   }
 
   .welcome {
@@ -400,7 +418,11 @@
   .welcome-title {
     font-size: 28px;
     font-weight: 600;
-    color: #333;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #333 0%, #666 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     margin-bottom: 32px;
   }
 
@@ -412,28 +434,35 @@
 
   .action-btn {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 8px;
-    padding: 20px 32px;
-    background: #f5f5f5;
+    gap: 10px;
+    padding: 12px 20px;
+    background: #fff;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.15s ease;
     color: #333;
-    font-size: 13px;
+    font-size: 14px;
+    font-weight: 500;
   }
 
   .action-btn:hover {
-    background: #eee;
+    background: #f5f5f5;
     border-color: #ccc;
   }
 
+  .action-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0,122,255,0.4);
+  }
+
   .action-icon {
-    width: 24px;
-    height: 24px;
+    width: 18px;
+    height: 18px;
     opacity: 0.7;
+    flex-shrink: 0;
   }
 
   .recents-section {
@@ -462,8 +491,8 @@
 
   .recent-item {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 10px;
     padding: 10px 12px;
     background: none;
     border: none;
@@ -475,6 +504,26 @@
 
   .recent-item:hover {
     background: #f0f0f0;
+  }
+
+  .recent-item:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0,122,255,0.4);
+  }
+
+  .recent-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: #888;
+  }
+
+  .recent-info {
+    display: flex;
+    flex: 1;
+    justify-content: space-between;
+    align-items: center;
+    min-width: 0;
   }
 
   .recent-name {
@@ -500,12 +549,12 @@
     bottom: 16px;
     left: 50%;
     transform: translateX(-50%);
-    background: #ff3b30;
+    background: #ef4444;
     color: white;
-    padding: 8px 16px;
-    border-radius: 6px;
+    padding: 10px 16px;
+    border-radius: 8px;
     font-size: 13px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
 
   /* Tiptap Editor Styles */
@@ -638,13 +687,14 @@
     }
 
     .mode-toggle {
-      background: #333;
-      border-color: #555;
+      background: transparent;
+      border-color: #333;
       color: #ccc;
     }
 
     .mode-toggle:hover {
-      background: #444;
+      background: #333;
+      border-color: #444;
     }
 
     .mode-toggle.active {
@@ -653,13 +703,25 @@
       color: #fff;
     }
 
+    .source-editor:focus {
+      background: #252525;
+      box-shadow: inset 0 0 0 1px #333;
+    }
+
+    .recent-icon {
+      color: #666;
+    }
+
     .source-editor {
       background: #1e1e1e;
       color: #e0e0e0;
     }
 
     .welcome-title {
-      color: #e0e0e0;
+      background: linear-gradient(135deg, #e0e0e0 0%, #a0a0a0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
     .action-btn {
