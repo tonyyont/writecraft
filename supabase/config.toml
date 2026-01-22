@@ -74,3 +74,26 @@ redirect_uri = "https://ausxaxibmaztljouwhyx.supabase.co/auth/v1/callback"
 enabled = true
 port = 54327
 vector_port = 54328
+
+# ============================================
+# Edge Functions Configuration
+# ============================================
+# Disable gateway JWT verification for functions that handle their own auth.
+# This is required when using the new sb_publishable_ API key format.
+# These functions implement their own user authentication via the Authorization header.
+
+[functions.claude-proxy]
+verify_jwt = false
+
+[functions.get-subscription]
+verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.create-portal-session]
+verify_jwt = false
+
+# stripe-webhook doesn't need JWT verification (uses Stripe signature)
+[functions.stripe-webhook]
+verify_jwt = false

@@ -817,14 +817,44 @@ fn convert_auth_response(response: SupabaseAuthResponse) -> Result<AuthSession, 
 }
 
 /// Get the current access token (for internal use by Claude proxy)
-pub fn get_access_token() -> Result<String, AuthError> {
+/// Automatically refreshes expired sessions
+pub async fn get_access_token() -> Result<String, AuthError> {
     let session = load_session().ok_or(AuthError::NotAuthenticated)?;
 
     // Check if session is expired
     let now = chrono::Utc::now().timestamp();
     if session.expires_at <= now {
-        return Err(AuthError::SessionExpired);
+        // Try to refresh the session
+        match refresh_session_internal(&session.refresh_token).await {
+            Ok(new_session) => Ok(new_session.access_token),
+            Err(_) => {
+                clear_session();
+                Err(AuthError::SessionExpired)
+            }
+        }
+    } else {
+        Ok(session.access_token)
     }
+}
 
-    Ok(session.access_token)
+/// Debug command to check auth state
+#[tauri::command]
+pub fn debug_auth_state() -> Result<String, String> {
+    let session = load_session();
+
+    match session {
+        Some(s) => {
+            let now = chrono::Utc::now().timestamp();
+            let expires_in = s.expires_at - now;
+            Ok(format!(
+                "Session found:\n  User: {} ({})\n  Token prefix: {}...\n  Expires in: {} seconds\n  Expired: {}",
+                s.user.email,
+                s.user.id,
+                &s.access_token[..20.min(s.access_token.len())],
+                expires_in,
+                expires_in <= 0
+            ))
+        }
+        None => Ok("No session found".to_string())
+    }
 }

@@ -5,9 +5,11 @@
   import { documentStore } from '$lib/stores/document.svelte';
   import { authStore } from '$lib/stores/auth.svelte';
   import SettingsDialog from './Settings/SettingsDialog.svelte';
+  import UpdateDialog from './Settings/UpdateDialog.svelte';
 
-  // State for Settings dialog
+  // State for dialogs
   let settingsDialogOpen = $state(false);
+  let updateDialogOpen = $state(false);
 
   // State for inline rename
   let isRenaming = $state(false);
@@ -136,6 +138,9 @@
         case 'settings':
           settingsDialogOpen = true;
           break;
+        case 'check_updates':
+          updateDialogOpen = true;
+          break;
       }
     });
 
@@ -188,6 +193,7 @@
 </div>
 
 <SettingsDialog open={settingsDialogOpen} onClose={() => settingsDialogOpen = false} />
+<UpdateDialog open={updateDialogOpen} onClose={() => updateDialogOpen = false} />
 
 <style>
   .app-bar {

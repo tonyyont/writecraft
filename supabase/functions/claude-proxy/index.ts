@@ -94,10 +94,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 6. Get Anthropic API key from environment
-    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
+    // 6. Get Anthropic API key from environment (check both naming conventions)
+    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY') ?? Deno.env.get('CLAUDE_API_KEY');
     if (!anthropicKey) {
-      console.error('ANTHROPIC_API_KEY not configured');
+      console.error('ANTHROPIC_API_KEY or CLAUDE_API_KEY not configured');
       return errorResponse(500, 'configuration_error', 'API not configured');
     }
 

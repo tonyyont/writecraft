@@ -3,6 +3,19 @@
   "productName": "WriteCraft",
   "version": "0.1.0",
   "identifier": "com.writecraft.app",
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/tonyyont/writecraft/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDMyMkZGMTVENTI0QUVERkEKUldUNjdVcFNYZkV2TWhLVnMyakVNNFFIRnJ3czlGbXh3K0dGSjJFems1WSsxbmFuTDQ5S0FyM1oK"
+    },
+    "deep-link": {
+      "desktop": {
+        "schemes": ["fizz"]
+      }
+    }
+  },
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -25,13 +38,6 @@
       "csp": null
     }
   },
-  "plugins": {
-    "deep-link": {
-      "desktop": {
-        "schemes": ["fizz"]
-      }
-    }
-  },
   "bundle": {
     "active": true,
     "targets": "all",
@@ -43,7 +49,9 @@
       "icons/icon.ico"
     ],
     "macOS": {
-      "entitlements": "./entitlements.plist"
+      "entitlements": "./entitlements.plist",
+      "signingIdentity": "Developer ID Application: Tony Sheng (MN84M3F6WZ)",
+      "infoPlist": "./Info.plist"
     }
   }
 }

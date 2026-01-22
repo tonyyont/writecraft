@@ -605,9 +605,15 @@ pub async fn send_message_with_tools(
 // ============================================
 
 const SUPABASE_URL: &str = "https://ausxaxibmaztljouwhyx.supabase.co";
+// Modern publishable key format (replaces legacy JWT anon key)
+const SUPABASE_ANON_KEY: &str = "sb_publishable_cYznAZlD3GCHzRs4SWxtNw_L9pFRJal";
 
 fn get_supabase_url() -> Option<String> {
     Some(SUPABASE_URL.to_string())
+}
+
+fn get_supabase_anon_key() -> Option<String> {
+    Some(SUPABASE_ANON_KEY.to_string())
 }
 
 /// Request structure for the Supabase Claude proxy
@@ -633,13 +639,23 @@ pub async fn send_message_authenticated(
     tools: Option<Vec<Tool>>,
     model: Option<String>,
 ) -> Result<AssistantResponse, ClaudeError> {
-    // Get access token from auth session
-    let access_token = super::auth::get_access_token()
-        .map_err(|e| ClaudeError::Api(e.to_string()))?;
+    // Get access token from auth session (auto-refreshes if expired)
+    let access_token = match super::auth::get_access_token().await {
+        Ok(token) => {
+            eprintln!("[DEBUG] Got access token: {}...", &token[..20.min(token.len())]);
+            token
+        }
+        Err(e) => {
+            eprintln!("[DEBUG] Failed to get access token: {:?}", e);
+            return Err(ClaudeError::Api(format!("Auth error: {}", e)));
+        }
+    };
 
-    // Get Supabase URL
+    // Get Supabase URL and anon key
     let supabase_url = get_supabase_url()
         .ok_or_else(|| ClaudeError::Api("Supabase URL not configured".to_string()))?;
+    let anon_key = get_supabase_anon_key()
+        .ok_or_else(|| ClaudeError::Api("Supabase anon key not configured".to_string()))?;
 
     let client = Client::new();
     let model = model.unwrap_or_else(|| DEFAULT_MODEL.to_string());
@@ -653,9 +669,13 @@ pub async fn send_message_authenticated(
         tools,
     };
 
+    eprintln!("[DEBUG] Calling Supabase proxy at {}/functions/v1/claude-proxy", supabase_url);
+    eprintln!("[DEBUG] Using apikey: {}...", &anon_key[..20.min(anon_key.len())]);
+
     let response = client
         .post(format!("{}/functions/v1/claude-proxy", supabase_url))
         .header("Authorization", format!("Bearer {}", access_token))
+        .header("apikey", &anon_key)
         .header("Content-Type", "application/json")
         .json(&request_body)
         .send()
@@ -678,6 +698,7 @@ pub async fn send_message_authenticated(
             error_body
         };
 
+        eprintln!("[DEBUG] Supabase proxy error {}: {}", status, error_msg);
         return match status.as_u16() {
             401 => Err(ClaudeError::Api("Authentication required. Please sign in.".to_string())),
             403 => Err(ClaudeError::Api(error_msg)),

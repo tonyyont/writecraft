@@ -11,8 +11,29 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_deep_link::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            // When a second instance is launched (e.g., from OAuth callback),
+            // forward the deep link URL to the existing instance
+            if let Some(window) = app.get_webview_window("main") {
+                // Focus the existing window
+                let _ = window.set_focus();
+
+                // Check if any argument looks like a deep link URL
+                for arg in args.iter() {
+                    if arg.starts_with("fizz://") {
+                        let _ = window.emit("deep-link", arg.clone());
+                    }
+                }
+            }
+        }))
         .setup(|app| {
             // Custom menu items
+            let check_updates_item = MenuItemBuilder::new("Check for Updates...")
+                .id("check_updates")
+                .build(app)?;
+
             let settings_item = MenuItemBuilder::new("Settings...")
                 .id("settings")
                 .accelerator("Cmd+,")
@@ -49,6 +70,7 @@ pub fn run() {
                     ..Default::default()
                 }))
                 .separator()
+                .item(&check_updates_item)
                 .item(&settings_item)
                 .separator()
                 .services()
@@ -161,6 +183,7 @@ pub fn run() {
             get_subscription_info,
             get_checkout_url,
             get_billing_portal_url,
+            debug_auth_state,
             // Claude API commands
             send_message,
             send_message_with_tools,

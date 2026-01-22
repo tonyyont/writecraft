@@ -53,15 +53,31 @@ export function createUserClient(authHeader: string): SupabaseClient {
 }
 
 // Extract and validate user from auth header
+// Uses service role client to verify the JWT token directly
 export async function getUser(authHeader: string | null): Promise<{ id: string; email: string } | null> {
   if (!authHeader) {
+    console.error('No auth header provided');
     return null;
   }
 
-  const client = createUserClient(authHeader);
-  const { data: { user }, error } = await client.auth.getUser();
+  // Extract token from Bearer header
+  const token = authHeader.replace('Bearer ', '');
+  if (!token) {
+    console.error('No token in auth header');
+    return null;
+  }
 
-  if (error || !user) {
+  // Use service role client to get user from token
+  const client = createServiceClient();
+  const { data: { user }, error } = await client.auth.getUser(token);
+
+  if (error) {
+    console.error('Error validating user token:', error.message);
+    return null;
+  }
+
+  if (!user) {
+    console.error('No user found for token');
     return null;
   }
 
