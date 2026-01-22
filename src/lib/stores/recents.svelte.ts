@@ -81,6 +81,18 @@ function removeRecent(path: string): void {
   saveRecents(updated);
 }
 
+// Update a file's path in recents (for rename)
+function updateRecentPath(oldPath: string, newPath: string): void {
+  const updated = recentFiles.map(f => {
+    if (f.path === oldPath) {
+      return { ...f, path: newPath, name: getFilename(newPath) };
+    }
+    return f;
+  });
+  recentFiles = updated;
+  saveRecents(updated);
+}
+
 // Clear all recents
 function clearRecents(): void {
   recentFiles = [];
@@ -93,6 +105,7 @@ export const recentsStore = {
 
   addRecent,
   removeRecent,
+  updateRecentPath,
   clearRecents,
   getDirectory
 };

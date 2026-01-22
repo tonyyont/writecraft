@@ -90,3 +90,41 @@ pub fn get_sidecar_path_for_document(md_path: String) -> Result<String, FileErro
     let path = get_sidecar_path(&md_path)?;
     Ok(path.to_string_lossy().to_string())
 }
+
+#[tauri::command]
+pub async fn rename_document(old_path: String, new_path: String) -> Result<(), FileError> {
+    let old_md = PathBuf::from(&old_path);
+    let new_md = PathBuf::from(&new_path);
+
+    // Validate both paths are .md files
+    if old_md.extension().and_then(|e| e.to_str()) != Some("md") {
+        return Err(FileError::InvalidPath("Source file must have .md extension".to_string()));
+    }
+    if new_md.extension().and_then(|e| e.to_str()) != Some("md") {
+        return Err(FileError::InvalidPath("Target file must have .md extension".to_string()));
+    }
+
+    // Check source exists
+    if !old_md.exists() {
+        return Err(FileError::InvalidPath("Source file does not exist".to_string()));
+    }
+
+    // Check target doesn't exist (unless same file with different case)
+    if new_md.exists() && old_path.to_lowercase() != new_path.to_lowercase() {
+        return Err(FileError::InvalidPath("A file with that name already exists".to_string()));
+    }
+
+    // Get sidecar paths
+    let old_sidecar = get_sidecar_path(&old_path)?;
+    let new_sidecar = get_sidecar_path(&new_path)?;
+
+    // Rename the markdown file
+    tokio::fs::rename(&old_md, &new_md).await?;
+
+    // Rename sidecar if it exists
+    if old_sidecar.exists() {
+        tokio::fs::rename(&old_sidecar, &new_sidecar).await?;
+    }
+
+    Ok(())
+}

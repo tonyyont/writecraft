@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { listen } from '@tauri-apps/api/event';
   import { open, save } from '@tauri-apps/plugin-dialog';
   import { documentStore } from '$lib/stores/document.svelte';
@@ -7,6 +7,58 @@
 
   // State for API Key dialog
   let apiKeyDialogOpen = $state(false);
+
+  // State for inline rename
+  let isRenaming = $state(false);
+  let renameValue = $state('');
+  let renameError = $state<string | null>(null);
+  let renameInput: HTMLInputElement | undefined = $state();
+
+  function startRename() {
+    if (!documentStore.filename) return;
+
+    // Remove .md extension for editing
+    const filename = documentStore.filename;
+    renameValue = filename.endsWith('.md') ? filename.slice(0, -3) : filename;
+    renameError = null;
+    isRenaming = true;
+
+    // Focus the input after it renders
+    tick().then(() => {
+      renameInput?.focus();
+      renameInput?.select();
+    });
+  }
+
+  async function confirmRename() {
+    if (!renameValue.trim()) {
+      renameError = 'Filename cannot be empty';
+      return;
+    }
+
+    try {
+      await documentStore.renameDocument(renameValue.trim());
+      isRenaming = false;
+      renameError = null;
+    } catch (e) {
+      renameError = e instanceof Error ? e.message : String(e);
+    }
+  }
+
+  function cancelRename() {
+    isRenaming = false;
+    renameError = null;
+  }
+
+  function handleRenameKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      confirmRename();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelRename();
+    }
+  }
 
   async function handleOpen() {
     const selected = await open({
@@ -75,6 +127,11 @@
         case 'save_as':
           handleSaveAs();
           break;
+        case 'rename':
+          if (documentStore.currentPath) {
+            startRename();
+          }
+          break;
         case 'settings':
           apiKeyDialogOpen = true;
           break;
@@ -91,12 +148,30 @@
   <div class="traffic-light-spacer"></div>
   <div class="filename-container">
     {#if documentStore.filename}
-      <div class="filename">
-        {documentStore.filename}
-        {#if documentStore.isDirty}
-          <span class="dirty-indicator">•</span>
-        {/if}
-      </div>
+      {#if isRenaming}
+        <div class="rename-container">
+          <input
+            bind:this={renameInput}
+            type="text"
+            class="rename-input"
+            class:error={renameError}
+            bind:value={renameValue}
+            onkeydown={handleRenameKeydown}
+            onblur={cancelRename}
+          />
+          <span class="rename-extension">.md</span>
+          {#if renameError}
+            <div class="rename-error">{renameError}</div>
+          {/if}
+        </div>
+      {:else}
+        <button class="filename" onclick={startRename} title="Click to rename">
+          {documentStore.filename}
+          {#if documentStore.isDirty}
+            <span class="dirty-indicator">•</span>
+          {/if}
+        </button>
+      {/if}
     {/if}
   </div>
   <div class="traffic-light-spacer"></div>
@@ -133,11 +208,66 @@
     font-weight: 500;
     color: #333;
     -webkit-app-region: no-drag;
+    background: none;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .filename:hover {
+    background-color: rgba(0, 0, 0, 0.05);
   }
 
   .dirty-indicator {
     color: #ff9500;
     margin-left: 4px;
+  }
+
+  .rename-container {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    position: relative;
+    -webkit-app-region: no-drag;
+  }
+
+  .rename-input {
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 4px 8px;
+    width: 200px;
+    outline: none;
+  }
+
+  .rename-input:focus {
+    border-color: #007aff;
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+  }
+
+  .rename-input.error {
+    border-color: #ff3b30;
+  }
+
+  .rename-extension {
+    font-size: 13px;
+    font-weight: 500;
+    color: #666;
+  }
+
+  .rename-error {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    font-size: 11px;
+    color: #ff3b30;
+    margin-top: 4px;
+    white-space: nowrap;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -148,6 +278,25 @@
 
     .filename {
       color: #e0e0e0;
+    }
+
+    .filename:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .rename-input {
+      color: #e0e0e0;
+      background: #2a2a2a;
+      border-color: #444;
+    }
+
+    .rename-input:focus {
+      border-color: #0a84ff;
+      box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.3);
+    }
+
+    .rename-extension {
+      color: #888;
     }
   }
 </style>

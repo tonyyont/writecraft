@@ -37,6 +37,10 @@ pub fn run() {
                 .accelerator("Cmd+Shift+S")
                 .build(app)?;
 
+            let rename_item = MenuItemBuilder::new("Rename...")
+                .id("rename")
+                .build(app)?;
+
             // App menu (WriteCraft menu)
             let app_submenu = SubmenuBuilder::new(app, "WriteCraft")
                 .about(Some(AboutMetadata {
@@ -62,6 +66,7 @@ pub fn run() {
                 .separator()
                 .item(&save_item)
                 .item(&save_as_item)
+                .item(&rename_item)
                 .separator()
                 .close_window()
                 .build()?;
@@ -117,6 +122,7 @@ pub fn run() {
             write_sidecar,
             file_exists,
             get_sidecar_path_for_document,
+            rename_document,
             // Keychain commands
             get_api_key,
             set_api_key,

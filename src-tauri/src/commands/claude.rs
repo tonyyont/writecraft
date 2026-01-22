@@ -173,11 +173,29 @@ struct ApiError {
 // API Request types
 // ============================================
 
+/// Cache control for prompt caching
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct CacheControl {
+    #[serde(rename = "type")]
+    cache_type: String,
+}
+
+/// System prompt block with optional cache control
+#[derive(Debug, Clone, Serialize)]
+struct SystemBlock {
+    #[serde(rename = "type")]
+    block_type: String,
+    text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    cache_control: Option<CacheControl>,
+}
+
 #[derive(Debug, Serialize)]
 struct ClaudeRequest {
     model: String,
     max_tokens: u32,
-    system: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    system: Option<Vec<SystemBlock>>,
     messages: Vec<Message>,
     stream: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -215,10 +233,21 @@ pub async fn send_message(
     let client = Client::new();
     let model = model.unwrap_or_else(|| DEFAULT_MODEL.to_string());
 
+    // Build system blocks with cache control for prompt caching
+    let system_blocks = system_prompt.map(|text| {
+        vec![SystemBlock {
+            block_type: "text".to_string(),
+            text,
+            cache_control: Some(CacheControl {
+                cache_type: "ephemeral".to_string(),
+            }),
+        }]
+    });
+
     let request_body = ClaudeRequest {
         model,
         max_tokens: 4096,
-        system: system_prompt,
+        system: system_blocks,
         messages,
         stream: true,
         tools: None,
@@ -228,6 +257,7 @@ pub async fn send_message(
         .post(CLAUDE_API_URL)
         .header("x-api-key", &api_key)
         .header("anthropic-version", "2023-06-01")
+        .header("anthropic-beta", "prompt-caching-2024-07-31")
         .header("content-type", "application/json")
         .json(&request_body)
         .send()
@@ -367,10 +397,21 @@ pub async fn send_message_with_tools(
     let client = Client::new();
     let model = model.unwrap_or_else(|| DEFAULT_MODEL.to_string());
 
+    // Build system blocks with cache control for prompt caching
+    let system_blocks = system_prompt.map(|text| {
+        vec![SystemBlock {
+            block_type: "text".to_string(),
+            text,
+            cache_control: Some(CacheControl {
+                cache_type: "ephemeral".to_string(),
+            }),
+        }]
+    });
+
     let request_body = ClaudeRequest {
         model,
         max_tokens: 4096,
-        system: system_prompt,
+        system: system_blocks,
         messages,
         stream: true,
         tools,
@@ -380,6 +421,7 @@ pub async fn send_message_with_tools(
         .post(CLAUDE_API_URL)
         .header("x-api-key", &api_key)
         .header("anthropic-version", "2023-06-01")
+        .header("anthropic-beta", "prompt-caching-2024-07-31")
         .header("content-type", "application/json")
         .json(&request_body)
         .send()

@@ -35,7 +35,14 @@ fn fallback_key() -> String {
 
 #[tauri::command]
 pub fn get_api_key() -> Result<Option<String>, KeychainError> {
-    // Try keychain first
+    // Check environment variable first (useful for development)
+    if let Ok(key) = std::env::var("ANTHROPIC_API_KEY") {
+        if !key.is_empty() {
+            return Ok(Some(key));
+        }
+    }
+
+    // Try keychain next
     if let Ok(entry) = get_entry() {
         match entry.get_password() {
             Ok(password) => return Ok(Some(password)),

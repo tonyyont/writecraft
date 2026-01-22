@@ -43,6 +43,12 @@ async function loadDocument(path: string): Promise<void> {
     currentPath = path;
     isDirty = false;
 
+    // Initialize "last seen" state so change tracking works from the start
+    // This ensures that any edits made before the first Claude response are detected
+    lastSeenContent = docContent;
+    lastSeenOutline = sidecarData.outline.current ?? null;
+    lastSeenStage = sidecarData.stage;
+
     // Add to recent files
     recentsStore.addRecent(path);
   } catch (e) {
@@ -179,28 +185,77 @@ interface ChangesSinceLastSeen {
 
 // Get changes since the last snapshot
 function getChangesSinceLastSeen(): ChangesSinceLastSeen | null {
-  // Return null if no snapshot exists yet
-  if (lastSeenContent === '' && lastSeenOutline === null && lastSeenStage === null) {
-    return null;
-  }
-
   const currentOutline = sidecar?.outline.current ?? null;
   const currentStage = sidecar?.stage ?? null;
 
   // Compare outlines by JSON serialization (deep equality check)
   const outlineChanged = JSON.stringify(lastSeenOutline) !== JSON.stringify(currentOutline);
+  const contentChanged = lastSeenContent !== content;
+  const stageChanged = lastSeenStage !== currentStage;
+
+  // Return null only if there are no actual changes
+  if (!contentChanged && !outlineChanged && !stageChanged) {
+    return null;
+  }
 
   return {
-    contentChanged: lastSeenContent !== content,
+    contentChanged,
     previousContent: lastSeenContent || null,
     currentContent: content,
     outlineChanged,
     previousOutline: lastSeenOutline,
     currentOutline,
-    stageChanged: lastSeenStage !== currentStage,
+    stageChanged,
     previousStage: lastSeenStage,
     currentStage
   };
+}
+
+// Get the directory of the current document
+function getDirectory(): string | null {
+  if (!currentPath) return null;
+  const parts = currentPath.split('/');
+  parts.pop(); // Remove filename
+  return parts.join('/');
+}
+
+// Rename the current document
+async function renameDocument(newFilename: string): Promise<void> {
+  if (!currentPath) {
+    throw new Error('No document is currently open');
+  }
+
+  // Flush any pending saves first
+  await flushPendingSaves();
+
+  const directory = getDirectory();
+  if (!directory) {
+    throw new Error('Could not determine document directory');
+  }
+
+  // Ensure .md extension
+  const finalFilename = newFilename.endsWith('.md') ? newFilename : `${newFilename}.md`;
+  const newPath = `${directory}/${finalFilename}`;
+
+  // Don't rename if it's the same path
+  if (newPath === currentPath) {
+    return;
+  }
+
+  try {
+    await invoke('rename_document', { oldPath: currentPath, newPath });
+
+    // Update recents store
+    recentsStore.updateRecentPath(currentPath, newPath);
+
+    // Update current path
+    currentPath = newPath;
+
+    error = null;
+  } catch (e) {
+    error = e instanceof Error ? e.message : String(e);
+    throw e;
+  }
 }
 
 // Close the current document
@@ -242,6 +297,7 @@ export const documentStore = {
   updateSidecar,
   updateStage,
   createDocument,
+  renameDocument,
   closeDocument,
   flushPendingSaves,
   snapshotLastSeen,
