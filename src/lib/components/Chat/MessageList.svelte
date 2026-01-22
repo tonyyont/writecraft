@@ -178,7 +178,7 @@
     padding: 16px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
   }
 
   .empty-state {
@@ -191,7 +191,6 @@
   }
 
   .message {
-    max-width: 85%;
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -199,30 +198,34 @@
 
   .message.user {
     align-self: flex-end;
+    max-width: 85%;
   }
 
   .message.assistant {
-    align-self: flex-start;
+    align-self: stretch;
+    max-width: 100%;
   }
 
   .message-content {
-    padding: 10px 14px;
-    border-radius: 12px;
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.6;
     word-wrap: break-word;
   }
 
+  /* User messages: subtle speech bubble */
   .message.user .message-content {
-    background: #007aff;
-    color: white;
+    padding: 10px 14px;
+    background: #404040;
+    color: #f5f5f5;
+    border-radius: 16px;
     border-bottom-right-radius: 4px;
   }
 
+  /* Assistant messages: no bubble, free-flowing text */
   .message.assistant .message-content {
-    background: #e9e9eb;
+    padding: 0;
+    background: transparent;
     color: #333;
-    border-bottom-left-radius: 4px;
   }
 
   .message-content.streaming :global(.streaming-word) {
@@ -243,8 +246,7 @@
 
   .timestamp {
     font-size: 11px;
-    color: #999;
-    padding: 0 4px;
+    color: #6b7280;
   }
 
   .message.user .timestamp {
@@ -267,31 +269,34 @@
   }
 
   .message.user .message-content :global(code) {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.15);
   }
 
   .message.assistant .message-content :global(code) {
-    background: rgba(0, 0, 0, 0.08);
+    background: rgba(0, 0, 0, 0.06);
+    color: #d63384;
   }
 
   .message-content :global(pre) {
-    margin: 8px 0;
+    margin: 12px 0;
     padding: 12px;
-    border-radius: 6px;
+    border-radius: 8px;
     overflow-x: auto;
   }
 
   .message.user .message-content :global(pre) {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.1);
   }
 
   .message.assistant .message-content :global(pre) {
-    background: rgba(0, 0, 0, 0.06);
+    background: #f6f6f6;
+    border: 1px solid #e5e5e5;
   }
 
   .message-content :global(pre code) {
     padding: 0;
     background: transparent;
+    color: inherit;
   }
 
   .message-content :global(strong) {
@@ -308,7 +313,7 @@
   }
 
   .message.user .message-content :global(a) {
-    color: white;
+    color: #a5d6ff;
   }
 
   .message.assistant .message-content :global(a) {
@@ -316,17 +321,23 @@
   }
 
   @media (prefers-color-scheme: dark) {
+    .message.user .message-content {
+      background: #4a4a4a;
+      color: #f0f0f0;
+    }
+
     .message.assistant .message-content {
-      background: #3a3a3a;
       color: #e0e0e0;
     }
 
     .message.assistant .message-content :global(code) {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.08);
+      color: #f472b6;
     }
 
     .message.assistant .message-content :global(pre) {
-      background: rgba(0, 0, 0, 0.2);
+      background: #2a2a2a;
+      border-color: #3a3a3a;
     }
 
     .message.assistant .message-content :global(a) {

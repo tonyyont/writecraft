@@ -81,42 +81,40 @@
 
 <style>
   .tool-indicator {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 10px;
-    background: #f0f4f8;
-    border-radius: 12px;
-    font-size: 12px;
-    color: #4a5568;
-    margin: 4px 0;
+    padding-left: 10px;
+    border-left: 2px solid #6b7280;
+    font-size: 13px;
+    margin: 2px 0;
+    line-height: 1.4;
   }
 
   .tool-icon {
-    font-size: 14px;
+    font-size: 11px;
   }
 
   .tool-label {
     font-weight: 500;
-    color: #2d3748;
+    color: #9ca3af;
   }
 
   .tool-summary {
-    color: #718096;
+    color: #6b7280;
   }
 
   @media (prefers-color-scheme: dark) {
     .tool-indicator {
-      background: #2d3748;
-      color: #a0aec0;
+      border-left-color: #6b7280;
     }
 
     .tool-label {
-      color: #e2e8f0;
+      color: #9ca3af;
     }
 
     .tool-summary {
-      color: #718096;
+      color: #6b7280;
     }
   }
 </style>
