@@ -3,6 +3,7 @@
   import { chatStore } from '$lib/stores/chat.svelte';
   import { documentStore } from '$lib/stores/document.svelte';
   import { apiKeyStore } from '$lib/stores/apiKey.svelte';
+  import { authStore } from '$lib/stores/auth.svelte';
   import { sendMessageWithTools, type ToolMessageCallbacks } from '$lib/services/claude';
   import { buildEnrichedSystemPrompt, type PromptContext } from '$lib/prompts/system';
   import { ALL_TOOLS } from '$lib/tools/definitions';
@@ -249,6 +250,9 @@
           callbacks
         );
 
+        // Increment usage count after successful API call
+        authStore.incrementUsage();
+
         // Update the message with final content (text and/or tool uses)
         if (response.toolUses.length > 0) {
           // Replace with proper content blocks including tool uses
@@ -312,6 +316,8 @@
       chatStore.setLoading(false);
       // Record what Claude has now seen for change tracking
       documentStore.snapshotLastSeen();
+      // Refresh usage count from server to stay in sync
+      authStore.fetchSubscriptionInfo();
     }
   }
 

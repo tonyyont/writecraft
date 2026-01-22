@@ -4,20 +4,21 @@
 import { corsHeaders, handleCors } from '../_shared/cors.ts';
 import { getUser, getSubscription, getCurrentUsage } from '../_shared/supabase.ts';
 
+// Response uses camelCase to match Rust client expectations
 interface SubscriptionResponse {
   subscription: {
-    plan_id: string;
+    planId: string;
     status: string;
-    current_period_end: string | null;
-    cancel_at_period_end: boolean;
+    currentPeriodEnd: string | null;
+    cancelAtPeriodEnd: boolean;
   } | null;
   usage: {
-    message_count: number;
-    message_limit: number;
-    period_start: string;
-    period_end: string;
+    messageCount: number;
+    messageLimit: number;
+    periodStart: string;
+    periodEnd: string;
   } | null;
-  allowed_models: string[];
+  allowedModels: string[];
 }
 
 Deno.serve(async (req) => {
@@ -52,18 +53,18 @@ Deno.serve(async (req) => {
 
     const response: SubscriptionResponse = {
       subscription: subscription ? {
-        plan_id: subscription.plan_id,
+        planId: subscription.plan_id,
         status: subscription.status,
-        current_period_end: subscription.current_period_end,
-        cancel_at_period_end: subscription.cancel_at_period_end,
+        currentPeriodEnd: subscription.current_period_end,
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
       } : null,
       usage: usage ? {
-        message_count: usage.message_count,
-        message_limit: usage.message_limit,
-        period_start: usage.period_start,
-        period_end: usage.period_end,
+        messageCount: usage.message_count,
+        messageLimit: usage.message_limit,
+        periodStart: usage.period_start,
+        periodEnd: usage.period_end,
       } : null,
-      allowed_models: allowedModels,
+      allowedModels: allowedModels,
     };
 
     return new Response(JSON.stringify(response), {

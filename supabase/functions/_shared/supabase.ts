@@ -105,22 +105,29 @@ export async function getSubscription(userId: string): Promise<Subscription | nu
 export async function getCurrentUsage(userId: string): Promise<Usage | null> {
   const client = createServiceClient();
 
-  const periodStart = new Date();
-  periodStart.setUTCDate(1);
-  periodStart.setUTCHours(0, 0, 0, 0);
-
+  // Use the database function which handles date_trunc properly
   const { data, error } = await client
-    .from('usage')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('period_start', periodStart.toISOString())
-    .single();
+    .rpc('get_current_usage', { p_user_id: userId });
 
-  if (error || !data) {
+  if (error) {
+    console.error('Error getting current usage:', error);
     return null;
   }
 
-  return data as Usage;
+  // RPC returns an array, get first row
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: '', // Not returned by RPC but not needed
+    user_id: userId,
+    period_start: row.period_start,
+    period_end: row.period_end,
+    message_count: row.message_count,
+    message_limit: row.message_limit,
+  } as Usage;
 }
 
 // Increment message count and return new count
