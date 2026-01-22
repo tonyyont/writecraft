@@ -4,17 +4,13 @@
   import MetadataPanel from '$lib/components/MetadataPanel.svelte';
   import Editor from '$lib/components/Editor/Editor.svelte';
   import ChatPanel from '$lib/components/Chat/ChatPanel.svelte';
-  import ApiKeyOnboarding from '$lib/components/Settings/ApiKeyOnboarding.svelte';
+  import { AuthGuard } from '$lib/components/Auth';
   import { documentStore } from '$lib/stores/document.svelte';
-  import { apiKeyStore } from '$lib/stores/apiKey.svelte';
+  import { authStore } from '$lib/stores/auth.svelte';
 
-  // Track if we've finished initial API key check
-  let isInitialized = $state(false);
-
-  onMount(async () => {
-    // Check for API key on startup
-    await apiKeyStore.checkApiKey();
-    isInitialized = true;
+  onMount(() => {
+    // Initialize auth on startup
+    authStore.initialize();
 
     // Flush pending saves when the window is about to close
     const handleBeforeUnload = () => {
@@ -37,24 +33,20 @@
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   });
-
-  function handleOnboardingComplete() {
-    // API key was saved, the store is already updated
-  }
 </script>
 
-{#if isInitialized && apiKeyStore.needsSetup}
-  <ApiKeyOnboarding onComplete={handleOnboardingComplete} />
-{/if}
-
-<div class="app-container">
-  <MenuBar />
-  <div class="main-content">
-    <MetadataPanel />
-    <Editor />
-    <ChatPanel />
-  </div>
-</div>
+<AuthGuard>
+  {#snippet children()}
+    <div class="app-container">
+      <MenuBar />
+      <div class="main-content">
+        <MetadataPanel />
+        <Editor />
+        <ChatPanel />
+      </div>
+    </div>
+  {/snippet}
+</AuthGuard>
 
 <style>
   :global(html, body) {

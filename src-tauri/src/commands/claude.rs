@@ -599,3 +599,225 @@ pub async fn send_message_with_tools(
         stop_reason,
     })
 }
+
+// ============================================
+// Authenticated Claude API (via Supabase proxy)
+// ============================================
+
+const SUPABASE_URL: &str = "https://ausxaxibmaztljouwhyx.supabase.co";
+
+fn get_supabase_url() -> Option<String> {
+    Some(SUPABASE_URL.to_string())
+}
+
+/// Request structure for the Supabase Claude proxy
+#[derive(Debug, Serialize)]
+struct ProxyClaudeRequest {
+    model: String,
+    max_tokens: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    system: Option<String>,
+    messages: Vec<Message>,
+    stream: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tools: Option<Vec<Tool>>,
+}
+
+/// Send a message through Supabase proxy with user authentication
+/// This enforces usage limits and plan restrictions
+#[tauri::command]
+pub async fn send_message_authenticated(
+    app: AppHandle,
+    messages: Vec<Message>,
+    system_prompt: Option<String>,
+    tools: Option<Vec<Tool>>,
+    model: Option<String>,
+) -> Result<AssistantResponse, ClaudeError> {
+    // Get access token from auth session
+    let access_token = super::auth::get_access_token()
+        .map_err(|e| ClaudeError::Api(e.to_string()))?;
+
+    // Get Supabase URL
+    let supabase_url = get_supabase_url()
+        .ok_or_else(|| ClaudeError::Api("Supabase URL not configured".to_string()))?;
+
+    let client = Client::new();
+    let model = model.unwrap_or_else(|| DEFAULT_MODEL.to_string());
+
+    let request_body = ProxyClaudeRequest {
+        model,
+        max_tokens: 4096,
+        system: system_prompt,
+        messages,
+        stream: true,
+        tools,
+    };
+
+    let response = client
+        .post(format!("{}/functions/v1/claude-proxy", supabase_url))
+        .header("Authorization", format!("Bearer {}", access_token))
+        .header("Content-Type", "application/json")
+        .json(&request_body)
+        .send()
+        .await
+        .map_err(|e| ClaudeError::Network(e.to_string()))?;
+
+    let status = response.status();
+
+    // Handle error status codes
+    if !status.is_success() {
+        let error_body = response.text().await.unwrap_or_default();
+
+        // Try to parse as JSON to extract the error message
+        let error_msg = if let Ok(json) = serde_json::from_str::<serde_json::Value>(&error_body) {
+            json["error"]["message"]
+                .as_str()
+                .unwrap_or(&error_body)
+                .to_string()
+        } else {
+            error_body
+        };
+
+        return match status.as_u16() {
+            401 => Err(ClaudeError::Api("Authentication required. Please sign in.".to_string())),
+            403 => Err(ClaudeError::Api(error_msg)),
+            429 => Err(ClaudeError::RateLimited(error_msg)),
+            400 => Err(ClaudeError::Api(error_msg)),
+            500..=599 => Err(ClaudeError::Api(format!("Server error: {}", error_msg))),
+            _ => Err(ClaudeError::Api(format!("Error ({}): {}", status, error_msg))),
+        };
+    }
+
+    // Process SSE stream with tool use support
+    let mut stream = response.bytes_stream();
+    let mut text_content = String::new();
+    let mut tool_uses: Vec<ToolUseEvent> = Vec::new();
+    let mut buffer = String::new();
+    let mut stop_reason = String::from("end_turn");
+
+    // Track current content block being built
+    let mut current_tool_use: Option<ToolUseState> = None;
+
+    while let Some(chunk_result) = stream.next().await {
+        let chunk = chunk_result.map_err(|e| ClaudeError::Network(e.to_string()))?;
+
+        let chunk_str = String::from_utf8_lossy(&chunk);
+        buffer.push_str(&chunk_str);
+
+        // Process complete SSE events
+        while let Some(newline_pos) = buffer.find('\n') {
+            let line = buffer[..newline_pos].trim().to_string();
+            buffer = buffer[newline_pos + 1..].to_string();
+
+            if line.starts_with("data: ") {
+                let data = &line[6..];
+
+                if data == "[DONE]" {
+                    continue;
+                }
+
+                if let Ok(event) = serde_json::from_str::<StreamEvent>(data) {
+                    match event.event_type.as_str() {
+                        "content_block_start" => {
+                            if let Some(block) = event.content_block {
+                                if block.block_type == "tool_use" {
+                                    current_tool_use = Some(ToolUseState {
+                                        id: block.id.unwrap_or_default(),
+                                        name: block.name.unwrap_or_default(),
+                                        input_json: String::new(),
+                                    });
+                                }
+                            }
+                        }
+                        "content_block_delta" => {
+                            if let Some(delta) = event.delta {
+                                match delta.delta_type.as_str() {
+                                    "text_delta" => {
+                                        if let Some(text) = delta.text {
+                                            text_content.push_str(&text);
+
+                                            let _ = app.emit(
+                                                "claude-stream-chunk",
+                                                StreamChunk {
+                                                    chunk: text,
+                                                    done: false,
+                                                },
+                                            );
+                                        }
+                                    }
+                                    "input_json_delta" => {
+                                        if let Some(partial) = delta.partial_json {
+                                            if let Some(ref mut tool) = current_tool_use {
+                                                tool.input_json.push_str(&partial);
+                                            }
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                        "content_block_stop" => {
+                            if let Some(tool) = current_tool_use.take() {
+                                let input: serde_json::Value =
+                                    serde_json::from_str(&tool.input_json)
+                                        .unwrap_or(serde_json::Value::Object(serde_json::Map::new()));
+
+                                let tool_event = ToolUseEvent {
+                                    id: tool.id.clone(),
+                                    name: tool.name.clone(),
+                                    input: input.clone(),
+                                };
+
+                                let _ = app.emit("claude-tool-use", tool_event.clone());
+                                tool_uses.push(tool_event);
+                            }
+                        }
+                        "message_stop" => {
+                            if let Some(msg) = event.message {
+                                if let Some(reason) = msg.stop_reason {
+                                    stop_reason = reason;
+                                }
+                            }
+
+                            let _ = app.emit(
+                                "claude-stream-chunk",
+                                StreamChunk {
+                                    chunk: String::new(),
+                                    done: true,
+                                },
+                            );
+
+                            let _ = app.emit(
+                                "claude-message-stop",
+                                MessageStopEvent {
+                                    stop_reason: stop_reason.clone(),
+                                },
+                            );
+                        }
+                        "error" => {
+                            if let Some(err) = event.error {
+                                let error_msg = format!("{}: {}", err.error_type, err.message);
+                                let _ = app.emit(
+                                    "claude-stream-error",
+                                    StreamError { error: error_msg.clone() },
+                                );
+                                return Err(ClaudeError::Api(error_msg));
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+    }
+
+    if !tool_uses.is_empty() && stop_reason == "end_turn" {
+        stop_reason = String::from("tool_use");
+    }
+
+    Ok(AssistantResponse {
+        text_content,
+        tool_uses,
+        stop_reason,
+    })
+}

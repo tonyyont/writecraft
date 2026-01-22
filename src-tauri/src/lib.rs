@@ -10,6 +10,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_deep_link::init())
         .setup(|app| {
             // Custom menu items
             let settings_item = MenuItemBuilder::new("Settings...")
@@ -106,6 +107,23 @@ pub fn run() {
 
             app.set_menu(menu)?;
 
+            // Register deep link handler for OAuth callbacks
+            #[cfg(desktop)]
+            {
+                use tauri_plugin_deep_link::DeepLinkExt;
+
+                let handle = app.handle().clone();
+                app.deep_link().on_open_url(move |event| {
+                    // Get the URLs from the event
+                    for url in event.urls() {
+                        // Emit to frontend for handling
+                        if let Some(window) = handle.get_webview_window("main") {
+                            let _ = window.emit("deep-link", url.to_string());
+                        }
+                    }
+                });
+            }
+
             Ok(())
         })
         .on_menu_event(|app, event| {
@@ -123,14 +141,30 @@ pub fn run() {
             file_exists,
             get_sidecar_path_for_document,
             rename_document,
-            // Keychain commands
+            // Keychain commands (for legacy API key support)
             get_api_key,
             set_api_key,
             delete_api_key,
             test_api_key,
+            // Auth commands
+            sign_up,
+            sign_in,
+            sign_in_with_oauth,
+            open_oauth_url,
+            handle_oauth_callback,
+            sign_out,
+            get_session,
+            refresh_session,
+            reset_password,
+            get_profile,
+            update_profile,
+            get_subscription_info,
+            get_checkout_url,
+            get_billing_portal_url,
             // Claude API commands
             send_message,
-            send_message_with_tools
+            send_message_with_tools,
+            send_message_authenticated
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

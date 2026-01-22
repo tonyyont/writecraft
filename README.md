@@ -28,6 +28,8 @@ The app philosophy is "light touch, high standards" - preserving your voice whil
 - **Tokio** async runtime
 - **Reqwest** HTTP client for Claude API
 - **Keyring** for macOS Keychain integration
+- **Supabase** for authentication and user data
+- **Stripe** for subscription billing
 
 ## Project Structure
 
@@ -38,10 +40,12 @@ FizzCC/
 │   │   └── +page.svelte          # Main application page
 │   └── lib/
 │       ├── components/           # Svelte components
+│       │   ├── Auth/             # Authentication (SignIn, SignUp, OAuth)
 │       │   ├── Chat/             # Chat panel (ChatPanel, MessageList, InputArea)
 │       │   ├── Editor/           # Rich text editor
-│       │   └── Settings/         # API key dialog
+│       │   └── Settings/         # Settings dialog (Profile, Billing)
 │       ├── stores/               # Reactive state management
+│       │   ├── auth.svelte.ts        # Authentication & subscription state
 │       │   ├── document.svelte.ts    # Document & file management
 │       │   ├── chat.svelte.ts        # Chat history & messages
 │       │   └── recents.svelte.ts     # Recent files tracking
@@ -59,6 +63,7 @@ FizzCC/
 │   │   ├── commands/            # Tauri IPC commands
 │   │   │   ├── file.rs          # File I/O (atomic writes)
 │   │   │   ├── keychain.rs      # API key storage
+│   │   │   ├── auth.rs          # Supabase authentication & billing
 │   │   │   └── claude.rs        # Claude API client with streaming
 │   │   └── models/
 │   │       └── sidecar.rs       # Metadata schema definitions
@@ -66,6 +71,10 @@ FizzCC/
 │   ├── tauri.conf.json          # Tauri configuration
 │   └── capabilities/
 │       └── default.json         # Security capabilities
+├── supabase/                     # Supabase configuration
+│   ├── migrations/               # Database schema migrations
+│   ├── functions/                # Edge Functions (API proxies, webhooks)
+│   └── config.toml               # Supabase project config
 ├── specs/                        # Development specifications
 └── static/                       # Static assets
 ```
@@ -133,12 +142,18 @@ npm run tauri dev
 
 ### Configuration
 
-On first launch, you'll be prompted to enter your Claude API key. The key is stored securely in the macOS Keychain.
+On first launch, you'll be prompted to sign in or create an account. WriteCraft supports:
 
-To get an API key:
-1. Visit [console.anthropic.com](https://console.anthropic.com)
-2. Create an account and generate an API key
-3. Enter the key in WriteCraft's settings (Cmd+,)
+- **Google OAuth** - Sign in with your Google account
+- **Email/Password** - Traditional email and password authentication
+
+#### Free vs Pro Plans
+
+| Feature | Free | Pro ($20/mo) |
+|---------|------|--------------|
+| Messages | 50/month | Unlimited |
+
+Upgrade to Pro via Settings → Billing.
 
 ## Development
 
@@ -255,8 +270,10 @@ interface Sidecar {
 
 ## Security
 
-- API keys stored in macOS Keychain (with in-memory fallback)
+- Authentication tokens stored in macOS Keychain (with in-memory fallback)
 - Atomic file writes prevent data corruption
+- Claude API calls proxied through authenticated Edge Functions
+- Stripe handles all payment processing (PCI compliant)
 - No sensitive data in URLs or logs
 
 ## License
@@ -265,6 +282,8 @@ MIT
 
 ## Roadmap
 
+- [x] User accounts and authentication
+- [x] Subscription billing with Stripe
 - [ ] Multi-document support
 - [ ] Advanced edit history UI
 - [ ] Conflict resolution interface
