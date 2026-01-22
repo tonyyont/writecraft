@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+build/
+dist/
+.svelte-kit/
+/package
+
+# Tauri
+src-tauri/target/
+src-tauri/WixTools/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Test coverage
+coverage/
+
+# Misc
+*.bak
+*.tmp
