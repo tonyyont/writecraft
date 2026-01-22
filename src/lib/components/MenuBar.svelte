@@ -3,10 +3,11 @@
   import { listen } from '@tauri-apps/api/event';
   import { open, save } from '@tauri-apps/plugin-dialog';
   import { documentStore } from '$lib/stores/document.svelte';
-  import ApiKeyDialog from './Settings/ApiKeyDialog.svelte';
+  import { authStore } from '$lib/stores/auth.svelte';
+  import SettingsDialog from './Settings/SettingsDialog.svelte';
 
-  // State for API Key dialog
-  let apiKeyDialogOpen = $state(false);
+  // State for Settings dialog
+  let settingsDialogOpen = $state(false);
 
   // State for inline rename
   let isRenaming = $state(false);
@@ -133,7 +134,7 @@
           }
           break;
         case 'settings':
-          apiKeyDialogOpen = true;
+          settingsDialogOpen = true;
           break;
       }
     });
@@ -174,10 +175,19 @@
       {/if}
     {/if}
   </div>
-  <div class="traffic-light-spacer"></div>
+  <!-- User avatar button -->
+  <button class="user-button" onclick={() => settingsDialogOpen = true} title="Settings">
+    {#if authStore.user?.avatarUrl}
+      <img src={authStore.user.avatarUrl} alt="Profile" class="user-avatar" />
+    {:else}
+      <span class="user-avatar-placeholder">
+        {authStore.user?.email?.[0]?.toUpperCase() ?? 'U'}
+      </span>
+    {/if}
+  </button>
 </div>
 
-<ApiKeyDialog open={apiKeyDialogOpen} onClose={() => apiKeyDialogOpen = false} />
+<SettingsDialog open={settingsDialogOpen} onClose={() => settingsDialogOpen = false} />
 
 <style>
   .app-bar {
@@ -268,6 +278,45 @@
     color: #ff3b30;
     margin-top: 4px;
     white-space: nowrap;
+  }
+
+  .user-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+    padding: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .user-button:hover {
+    opacity: 0.8;
+  }
+
+  .user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .user-avatar-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #da7756;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
   }
 
   @media (prefers-color-scheme: dark) {

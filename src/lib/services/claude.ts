@@ -112,11 +112,13 @@ export async function testApiKey(): Promise<boolean> {
 
 /**
  * Send a message to Claude API with tool support
+ * Uses the authenticated proxy when user is signed in
  * @param messages - Array of messages with flexible content
  * @param systemPrompt - Optional system prompt
  * @param tools - Optional array of tool definitions
  * @param callbacks - Optional callbacks for streaming events
  * @param model - Optional model override
+ * @param useAuthenticatedProxy - Whether to use the authenticated Supabase proxy
  * @returns Promise resolving to AssistantResponse
  */
 export async function sendMessageWithTools(
@@ -124,7 +126,8 @@ export async function sendMessageWithTools(
   systemPrompt?: string,
   tools?: Tool[],
   callbacks?: ToolMessageCallbacks,
-  model?: string
+  model?: string,
+  useAuthenticatedProxy: boolean = true
 ): Promise<AssistantResponse> {
   let chunkUnlisten: UnlistenFn | null = null;
   let errorUnlisten: UnlistenFn | null = null;
@@ -157,8 +160,11 @@ export async function sendMessageWithTools(
       });
     }
 
+    // Use authenticated proxy or direct API based on flag
+    const command = useAuthenticatedProxy ? 'send_message_authenticated' : 'send_message_with_tools';
+
     // Invoke the Rust command
-    const response = await invoke<AssistantResponse>('send_message_with_tools', {
+    const response = await invoke<AssistantResponse>(command, {
       messages,
       systemPrompt: systemPrompt || null,
       tools: tools || null,

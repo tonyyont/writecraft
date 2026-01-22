@@ -40,3 +40,4 @@ coverage/
 # Misc
 *.bak
 *.tmp
+supabase/.temp/
