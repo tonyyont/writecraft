@@ -41,3 +41,4 @@ coverage/
 *.bak
 *.tmp
 supabase/.temp/
+.env.release

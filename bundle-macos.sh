@@ -1,6 +1,14 @@
 #!/bin/bash
 set -e
 
+# Load environment variables from .env.release if it exists
+if [ -f ".env.release" ]; then
+    echo "📋 Loading credentials from .env.release..."
+    export $(grep -v '^#' .env.release | xargs)
+    # Load the signing key separately since it's a file path
+    export TAURI_SIGNING_PRIVATE_KEY="$(cat ~/.tauri/writecraft.key)"
+fi
+
 # Configuration
 APP_NAME="WriteCraft"
 BUNDLE_ID="com.writecraft.app"
