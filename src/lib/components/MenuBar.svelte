@@ -6,7 +6,7 @@
   import { authStore } from '$lib/stores/auth.svelte';
   import { editorStore } from '$lib/stores/editor.svelte';
   import { exportToPDF, exportToWord } from '$lib/services/export';
-  import type { UpdateInfo } from '$lib/services/updater';
+  import { checkForUpdates, type UpdateInfo } from '$lib/services/updater';
   import SettingsDialog from './Settings/SettingsDialog.svelte';
   import UpdateDialog from './Settings/UpdateDialog.svelte';
   import UpdateToast from './Settings/UpdateToast.svelte';
@@ -144,6 +144,19 @@
   }
 
   onMount(() => {
+    // Check for updates on app startup (silently, only show if update available)
+    checkForUpdates()
+      .then((info) => {
+        if (info) {
+          pendingUpdateInfo = info;
+          updateDialogOpen = true;
+        }
+      })
+      .catch((err) => {
+        // Silently ignore errors on startup check - user can manually check
+        console.log('Startup update check failed:', err);
+      });
+
     // Listen for menu events from Tauri
     const unlisten = listen<string>('menu-event', (event) => {
       switch (event.payload) {
