@@ -45,7 +45,8 @@
   function handleResize(e: MouseEvent) {
     if (!isResizing) return;
 
-    const delta = e.clientX - startX;
+    // Panel is on the right, so dragging left increases width
+    const delta = startX - e.clientX;
     const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + delta));
     panelWidth = newWidth;
   }
@@ -77,10 +78,21 @@
           stroke="currentColor"
           stroke-width="1.5"
         >
-          <path d="M6 4L10 8L6 12" />
+          <path d="M10 4L6 8L10 12" />
         </svg>
       </button>
     {:else}
+      <!-- Resize handle on the LEFT edge since panel is on the right -->
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <div
+        class="resize-handle"
+        onmousedown={startResize}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize metadata panel"
+        tabindex="-1"
+      ></div>
+
       <div class="panel-header">
         <span class="panel-title">Document</span>
         <button class="collapse-button" onclick={toggleCollapse} title="Collapse panel (Cmd+B)">
@@ -92,7 +104,7 @@
             stroke="currentColor"
             stroke-width="1.5"
           >
-            <path d="M10 4L6 8L10 12" />
+            <path d="M6 4L10 8L6 12" />
           </svg>
         </button>
       </div>
@@ -111,16 +123,6 @@
           <OutlineCard />
         </div>
       </div>
-
-      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-      <div
-        class="resize-handle"
-        onmousedown={startResize}
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="Resize metadata panel"
-        tabindex="-1"
-      ></div>
     {/if}
   </div>
 {/if}
@@ -131,7 +133,6 @@
     flex-direction: column;
     height: 100%;
     background: #fafafa;
-    border-right: 1px solid #e0e0e0;
     position: relative;
     flex-shrink: 0;
     transition: width 0.2s ease;
@@ -221,7 +222,7 @@
   .resize-handle {
     position: absolute;
     top: 0;
-    right: 0;
+    left: 0;
     width: 4px;
     height: 100%;
     cursor: ew-resize;
@@ -233,7 +234,7 @@
     content: '';
     position: absolute;
     top: 0;
-    right: 0;
+    left: 0;
     width: 1px;
     height: 100%;
     background: #e0e0e0;
@@ -247,7 +248,6 @@
   @media (prefers-color-scheme: dark) {
     .metadata-panel {
       background: #1e1e1e;
-      border-right-color: #333;
     }
 
     .panel-header {

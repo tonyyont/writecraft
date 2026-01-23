@@ -58,13 +58,13 @@
       <div class="main-content">
         {#if !focusMode}
           <div class="panel-container panel-left">
-            <MetadataPanel />
+            <ChatPanel />
           </div>
         {/if}
         <Editor bind:this={editorComponent} />
         {#if !focusMode}
           <div class="panel-container panel-right">
-            <ChatPanel />
+            <MetadataPanel />
           </div>
         {/if}
       </div>
