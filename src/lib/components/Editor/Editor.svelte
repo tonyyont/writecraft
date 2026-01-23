@@ -1,9 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { Editor } from '@tiptap/core';
-  import { open, save } from '@tauri-apps/plugin-dialog';
   import { documentStore } from '$lib/stores/document.svelte';
-  import { recentsStore } from '$lib/stores/recents.svelte';
   import { editorStore } from '$lib/stores/editor.svelte';
   import {
     getEditorExtensions,
@@ -11,48 +9,6 @@
     editorConfig,
   } from '$lib/editor/tiptap-config';
   import { getMarkdownFromEditor } from '$lib/editor/markdown-types';
-
-  // File operations for welcome screen
-  async function handleNewFile() {
-    const selected = await save({
-      filters: [
-        {
-          name: 'Markdown',
-          extensions: ['md'],
-        },
-      ],
-      defaultPath: 'untitled.md',
-    });
-
-    if (selected) {
-      await documentStore.createDocument(selected);
-    }
-  }
-
-  async function handleOpenFile() {
-    const selected = await open({
-      multiple: false,
-      filters: [
-        {
-          name: 'Markdown',
-          extensions: ['md'],
-        },
-      ],
-    });
-
-    if (selected && typeof selected === 'string') {
-      await documentStore.loadDocument(selected);
-    }
-  }
-
-  async function handleOpenRecent(path: string) {
-    try {
-      await documentStore.loadDocument(path);
-    } catch {
-      // File might not exist anymore, remove from recents
-      recentsStore.removeRecent(path);
-    }
-  }
 
   // Editor mode: 'source' (edit) or 'preview' (rich/rendered)
   let mode = $state<'source' | 'preview'>('source');
@@ -313,71 +269,6 @@
     <div class="editor-wrapper" class:hidden={mode !== 'preview'}>
       <div bind:this={editorElement} class="tiptap-container"></div>
     </div>
-  {:else}
-    <div class="welcome">
-      <div class="welcome-content">
-        <h1 class="welcome-title">WriteCraft</h1>
-
-        <div class="action-buttons">
-          <button class="action-btn" onclick={handleNewFile}>
-            <svg
-              class="action-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="12" y1="18" x2="12" y2="12"></line>
-              <line x1="9" y1="15" x2="15" y2="15"></line>
-            </svg>
-            <span>New file</span>
-          </button>
-          <button class="action-btn" onclick={handleOpenFile}>
-            <svg
-              class="action-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-              ></path>
-            </svg>
-            <span>Open file</span>
-          </button>
-        </div>
-
-        {#if recentsStore.files.length > 0}
-          <div class="recents-section">
-            <div class="recents-header">
-              <span class="recents-label">Recent files</span>
-            </div>
-            <div class="recents-list">
-              {#each recentsStore.files as file (file.path)}
-                <button class="recent-item" onclick={() => handleOpenRecent(file.path)}>
-                  <svg
-                    class="recent-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                  </svg>
-                  <div class="recent-info">
-                    <span class="recent-name">{file.name}</span>
-                    <span class="recent-path">{recentsStore.getDirectory(file.path)}</span>
-                  </div>
-                </button>
-              {/each}
-            </div>
-          </div>
-        {/if}
-      </div>
-    </div>
   {/if}
 
   {#if documentStore.error}
@@ -540,144 +431,6 @@
     outline: none;
     background: #fafbfc;
     box-shadow: inset 0 0 0 1px #e0e0e0;
-  }
-
-  .welcome {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px;
-  }
-
-  .welcome-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    max-width: 500px;
-    width: 100%;
-  }
-
-  .welcome-title {
-    font-size: 28px;
-    font-weight: 600;
-    letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #333 0%, #666 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 32px;
-  }
-
-  .action-buttons {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 40px;
-  }
-
-  .action-btn {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 20px;
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    color: #333;
-    font-size: 14px;
-    font-weight: 500;
-  }
-
-  .action-btn:hover {
-    background: #f5f5f5;
-    border-color: #ccc;
-  }
-
-  .action-btn:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.4);
-  }
-
-  .action-icon {
-    width: 18px;
-    height: 18px;
-    opacity: 0.7;
-    flex-shrink: 0;
-  }
-
-  .recents-section {
-    width: 100%;
-  }
-
-  .recents-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-    padding: 0 4px;
-  }
-
-  .recents-label {
-    font-size: 12px;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .recents-list {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .recent-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    background: none;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    text-align: left;
-    transition: background 0.1s ease;
-  }
-
-  .recent-item:hover {
-    background: #f0f0f0;
-  }
-
-  .recent-item:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.4);
-  }
-
-  .recent-icon {
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
-    color: #888;
-  }
-
-  .recent-info {
-    display: flex;
-    flex: 1;
-    justify-content: space-between;
-    align-items: center;
-    min-width: 0;
-  }
-
-  .recent-name {
-    font-size: 14px;
-    color: #333;
-  }
-
-  .recent-path {
-    font-size: 12px;
-    color: #999;
   }
 
   .loading {
@@ -873,47 +626,9 @@
       box-shadow: inset 0 0 0 1px #333;
     }
 
-    .recent-icon {
-      color: #666;
-    }
-
     .source-editor {
       background: #1e1e1e;
       color: #e0e0e0;
-    }
-
-    .welcome-title {
-      background: linear-gradient(135deg, #e0e0e0 0%, #a0a0a0 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .action-btn {
-      background: #2a2a2a;
-      border-color: #404040;
-      color: #e0e0e0;
-    }
-
-    .action-btn:hover {
-      background: #333;
-      border-color: #555;
-    }
-
-    .recents-label {
-      color: #666;
-    }
-
-    .recent-item:hover {
-      background: #2a2a2a;
-    }
-
-    .recent-name {
-      color: #e0e0e0;
-    }
-
-    .recent-path {
-      color: #666;
     }
 
     :global(.tiptap-editor a) {

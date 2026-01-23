@@ -214,6 +214,7 @@ pub fn run() {
             file_exists,
             get_sidecar_path_for_document,
             rename_document,
+            get_writecraft_documents_dir,
             // Keychain commands (for legacy API key support)
             get_api_key,
             set_api_key,

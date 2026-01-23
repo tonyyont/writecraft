@@ -1,5 +1,6 @@
 use crate::models::Sidecar;
 use std::path::PathBuf;
+use dirs::document_dir;
 
 #[derive(Debug, thiserror::Error)]
 pub enum FileError {
@@ -127,4 +128,21 @@ pub async fn rename_document(old_path: String, new_path: String) -> Result<(), F
     }
 
     Ok(())
+}
+
+/// Get the default documents directory for WriteCraft files.
+/// Creates ~/Documents/WriteCraft if it doesn't exist.
+#[tauri::command]
+pub async fn get_writecraft_documents_dir() -> Result<String, FileError> {
+    let docs_dir = document_dir()
+        .ok_or_else(|| FileError::InvalidPath("Could not find documents directory".to_string()))?;
+
+    let writecraft_dir = docs_dir.join("WriteCraft");
+
+    // Create the directory if it doesn't exist
+    if !writecraft_dir.exists() {
+        tokio::fs::create_dir_all(&writecraft_dir).await?;
+    }
+
+    Ok(writecraft_dir.to_string_lossy().to_string())
 }

@@ -205,6 +205,21 @@ async function createDocument(path: string): Promise<void> {
   }
 }
 
+// Create a new document with an auto-generated path in the default WriteCraft folder
+async function createDocumentWithDefaultPath(): Promise<string> {
+  // Get the WriteCraft documents directory
+  const documentsDir = await invoke<string>('get_writecraft_documents_dir');
+
+  // Generate a unique filename with timestamp
+  const timestamp = Date.now();
+  const path = `${documentsDir}/untitled-${timestamp}.md`;
+
+  // Create the document
+  await createDocument(path);
+
+  return path;
+}
+
 // Snapshot the current state as "last seen by Claude"
 function snapshotLastSeen(): void {
   lastSeenContent = content;
@@ -360,6 +375,7 @@ export const documentStore = {
   updateSidecar,
   updateStage,
   createDocument,
+  createDocumentWithDefaultPath,
   renameDocument,
   closeDocument,
   flushPendingSaves,

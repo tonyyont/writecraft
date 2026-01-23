@@ -2,6 +2,7 @@
   import { emit } from '@tauri-apps/api/event';
   import { chatStore } from '$lib/stores/chat.svelte';
   import { documentStore } from '$lib/stores/document.svelte';
+  import { recentsStore } from '$lib/stores/recents.svelte';
   import { sendMessage, type AgentCallbacks } from '$lib/services/agent';
   import MessageList from './MessageList.svelte';
   import InputArea from './InputArea.svelte';
@@ -46,7 +47,7 @@
     }
   }
 
-  // Resize handlers
+  // Resize handlers - Panel is now on LEFT, resize handle on RIGHT edge
   function startResize(e: MouseEvent) {
     isResizing = true;
     startX = e.clientX;
@@ -60,8 +61,8 @@
   function handleResize(e: MouseEvent) {
     if (!isResizing) return;
 
-    // Panel is on the right, so dragging left increases width
-    const delta = startX - e.clientX;
+    // Panel is on the left, so dragging right increases width
+    const delta = e.clientX - startX;
     const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + delta));
     panelWidth = newWidth;
   }
@@ -82,7 +83,7 @@
     },
   };
 
-  // Handle sending a message
+  // Handle sending a message (when document exists)
   async function handleSend(userContent: string) {
     // Clear any previous error
     errorMessage = null;
@@ -90,6 +91,33 @@
 
     // Send message via agent service
     await sendMessage(userContent, agentCallbacks);
+  }
+
+  // Handle sending from blank state - creates document first
+  async function handleBlankStateSend(userContent: string) {
+    // Clear any previous error
+    errorMessage = null;
+    isApiKeyError = false;
+
+    try {
+      // Create a new document with auto-generated path
+      await documentStore.createDocumentWithDefaultPath();
+
+      // Send the message to start the conversation
+      await sendMessage(userContent, agentCallbacks);
+    } catch (e) {
+      errorMessage = e instanceof Error ? e.message : String(e);
+    }
+  }
+
+  // Handle opening a recent file
+  async function handleOpenRecent(path: string) {
+    try {
+      await documentStore.loadDocument(path);
+    } catch {
+      // File might not exist anymore, remove from recents
+      recentsStore.removeRecent(path);
+    }
   }
 
   // Toggle panel visibility
@@ -100,18 +128,96 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-{#if documentStore.currentPath}
+{#if !documentStore.currentPath}
+  <!-- Blank state: centered, focused chat experience -->
+  <div class="chat-blank-state">
+    <div class="blank-content">
+      <!-- Logo/Icon -->
+      <div class="blank-logo">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+          <path d="M2 2l7.586 7.586"></path>
+          <circle cx="11" cy="11" r="2"></circle>
+        </svg>
+      </div>
+
+      <h1 class="blank-title">What would you like to write?</h1>
+
+      <div class="blank-input-wrapper">
+        <InputArea onSend={handleBlankStateSend} placeholder="Describe your writing project..." />
+      </div>
+
+      {#if errorMessage}
+        <div class="error-banner" class:api-key-error={isApiKeyError}>
+          <div class="error-content">
+            <span class="error-text">
+              {#if isApiKeyError}
+                API key not configured or invalid
+              {:else}
+                {errorMessage}
+              {/if}
+            </span>
+            {#if isApiKeyError}
+              <button class="error-action" onclick={openSettings}> Configure API Key </button>
+            {/if}
+          </div>
+          <button
+            class="error-dismiss"
+            onclick={() => {
+              errorMessage = null;
+              isApiKeyError = false;
+            }}
+            aria-label="Dismiss error"
+          >
+            <svg width="12" height="12" viewBox="0 0 14 14">
+              <path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="1.5" />
+            </svg>
+          </button>
+        </div>
+      {/if}
+
+      <!-- Suggestion chips -->
+      <div class="suggestions">
+        <button class="suggestion-chip" onclick={() => handleBlankStateSend('Help me write a blog post')}>
+          Blog post
+        </button>
+        <button class="suggestion-chip" onclick={() => handleBlankStateSend('Help me draft an email')}>
+          Email
+        </button>
+        <button class="suggestion-chip" onclick={() => handleBlankStateSend('Help me write documentation')}>
+          Documentation
+        </button>
+        <button class="suggestion-chip" onclick={() => handleBlankStateSend('Help me write a story')}>
+          Story
+        </button>
+      </div>
+
+      {#if recentsStore.files.length > 0}
+        <div class="recents-section">
+          <div class="recents-header">Recent</div>
+          <div class="recents-list">
+            {#each recentsStore.files.slice(0, 5) as file (file.path)}
+              <button class="recent-item" onclick={() => handleOpenRecent(file.path)}>
+                <svg class="recent-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                <div class="recent-info">
+                  <span class="recent-name">{file.name}</span>
+                  <span class="recent-path">{recentsStore.getDirectory(file.path)}</span>
+                </div>
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
+    </div>
+  </div>
+{:else}
+  <!-- Document exists: show normal chat panel -->
   <div class="chat-panel-container" class:closed={!isOpen}>
     {#if isOpen}
-      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-      <div
-        class="resize-handle"
-        onmousedown={startResize}
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="Resize chat panel"
-        tabindex="-1"
-      ></div>
       <div class="chat-panel" style="width: {panelWidth}px">
         <div class="panel-header">
           <span class="panel-title">Writing Assistant</span>
@@ -157,25 +263,213 @@
         {/if}
 
         <InputArea onSend={handleSend} />
+
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+        <div
+          class="resize-handle"
+          onmousedown={startResize}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize chat panel"
+          tabindex="-1"
+        ></div>
       </div>
     {:else}
-      <button class="open-button" onclick={togglePanel} title="Open panel (Cmd+L)">
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-        </svg>
-      </button>
+      <div class="collapsed-panel">
+        <button class="expand-button" onclick={togglePanel} title="Open panel (Cmd+L)">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path d="M6 4L10 8L6 12" />
+          </svg>
+        </button>
+      </div>
     {/if}
   </div>
 {/if}
 
 <style>
+  /* Blank state styles - full-screen centered experience */
+  .chat-blank-state {
+    position: fixed;
+    top: 44px; /* Below menu bar */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    background: var(--color-bg);
+    z-index: 10;
+  }
+
+  .blank-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 560px;
+    width: 100%;
+    margin-top: -60px; /* Shift up slightly for better visual balance */
+  }
+
+  .blank-logo {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    color: var(--color-text-muted);
+    opacity: 0.7;
+  }
+
+  .blank-logo svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .blank-title {
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: -0.5px;
+    color: var(--color-text);
+    margin: 0 0 32px 0;
+    text-align: center;
+  }
+
+  .blank-input-wrapper {
+    width: 100%;
+    margin-bottom: 16px;
+  }
+
+  /* Style the input area for blank state */
+  .blank-input-wrapper :global(.input-area) {
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    background: var(--color-bg-elevated);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .blank-input-wrapper :global(.input-area:focus-within) {
+    border-color: var(--color-primary);
+    box-shadow: 0 2px 12px rgba(0, 122, 255, 0.1);
+  }
+
+  /* Suggestion chips */
+  .suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 48px;
+  }
+
+  .suggestion-chip {
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: 18px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .suggestion-chip:hover {
+    background: var(--color-bg-elevated);
+    border-color: var(--color-text-muted);
+    color: var(--color-text);
+  }
+
+  .suggestion-chip:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+
+  .recents-section {
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .recents-header {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+
+  .recents-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .recent-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+  }
+
+  .recent-item:hover {
+    background: var(--color-bg-elevated);
+    border-color: var(--color-border);
+  }
+
+  .recent-item:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+
+  .recent-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+    opacity: 0.6;
+  }
+
+  .recent-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  .recent-name {
+    font-size: 13px;
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .recent-path {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Chat panel container styles */
   .chat-panel-container {
     display: flex;
     flex-shrink: 0;
@@ -184,28 +478,42 @@
   }
 
   .chat-panel-container.closed {
-    width: auto;
+    width: 40px;
   }
 
   .resize-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
     width: 4px;
+    height: 100%;
     cursor: ew-resize;
-    background: linear-gradient(to right, #e0e0e0 0px, #e0e0e0 1px, transparent 1px);
-    transition: background 0.2s ease;
-    flex-shrink: 0;
+    background: transparent;
+    transition: background-color 0.2s ease;
   }
 
-  .resize-handle:hover {
-    background: linear-gradient(to right, #007aff 0px, #007aff 1px, transparent 1px);
+  .resize-handle::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 1px;
+    height: 100%;
+    background: var(--color-border);
+    transition: background-color 0.2s ease;
+  }
+
+  .resize-handle:hover::after {
+    background: #007aff;
   }
 
   .chat-panel {
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: #fff;
-    border-left: 1px solid #e0e0e0;
+    background: var(--color-bg);
     overflow: hidden;
+    position: relative;
   }
 
   .panel-header {
@@ -214,8 +522,8 @@
     justify-content: space-between;
     height: 44px;
     padding: 0 12px;
-    border-bottom: 1px solid #e0e0e0;
-    background: #fafafa;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg-elevated);
     flex-shrink: 0;
     box-sizing: border-box;
   }
@@ -223,7 +531,7 @@
   .panel-title {
     font-size: 14px;
     font-weight: 500;
-    color: #333;
+    color: var(--color-text);
   }
 
   .close-button {
@@ -234,7 +542,7 @@
     justify-content: center;
     background: transparent;
     border: none;
-    color: #666;
+    color: var(--color-text-secondary);
     cursor: pointer;
     border-radius: 6px;
     transition: background-color 0.2s ease;
@@ -244,29 +552,34 @@
     background: rgba(0, 0, 0, 0.06);
   }
 
-  .open-button {
-    position: fixed;
-    right: 16px;
-    bottom: 16px;
-    width: 48px;
-    height: 48px;
+  .collapsed-panel {
+    width: 40px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 8px;
+    background: var(--color-bg);
+    border-right: 1px solid var(--color-border);
+    position: relative;
+  }
+
+  .expand-button {
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #007aff;
+    background: transparent;
     border: none;
-    border-radius: 50%;
-    color: white;
+    color: var(--color-text-secondary);
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    transition:
-      transform 0.2s,
-      box-shadow 0.2s;
+    border-radius: 6px;
+    transition: background 0.15s ease;
   }
 
-  .open-button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  .expand-button:hover {
+    background: var(--color-bg-raised);
   }
 
   .error-banner {
@@ -305,7 +618,7 @@
 
   .error-action {
     padding: 6px 12px;
-    background: #007aff;
+    background: var(--color-primary);
     color: white;
     border: none;
     border-radius: 6px;
@@ -317,7 +630,7 @@
   }
 
   .error-action:hover {
-    background: #0066d6;
+    background: var(--color-primary-hover);
   }
 
   .error-dismiss {
@@ -338,31 +651,13 @@
     background: rgba(185, 28, 28, 0.1);
   }
 
+  /* Dark mode */
   @media (prefers-color-scheme: dark) {
-    .resize-handle {
-      background: linear-gradient(to right, #333 0px, #333 1px, transparent 1px);
-    }
-
-    .resize-handle:hover {
-      background: linear-gradient(to right, #007aff 0px, #007aff 1px, transparent 1px);
-    }
-
-    .chat-panel {
-      background: #1e1e1e;
-      border-left-color: #333;
-    }
-
-    .panel-header {
-      background: #252525;
-      border-bottom-color: #333;
-    }
-
-    .panel-title {
-      color: #e0e0e0;
-    }
-
-    .close-button {
-      color: #aaa;
+    .blank-title {
+      background: linear-gradient(135deg, #e0e0e0 0%, #a0a0a0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
     .close-button:hover {
@@ -393,14 +688,6 @@
 
     .error-banner.api-key-error .error-text {
       color: #fcd34d;
-    }
-
-    .error-action {
-      background: #5ac8fa;
-    }
-
-    .error-action:hover {
-      background: #4ab8ea;
     }
   }
 </style>
