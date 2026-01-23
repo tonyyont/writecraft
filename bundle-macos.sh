@@ -100,12 +100,26 @@ else
     echo "⚠️  Skipping notarization (APPLE_ID and APPLE_PASSWORD not set)"
 fi
 
-# Create DMG for distribution
+# Create DMG for distribution with Applications folder symlink
 echo ""
 echo "📀 Creating DMG..."
 DMG_PATH="$BUNDLE_DIR/$APP_NAME-$VERSION.dmg"
+DMG_STAGING="$BUNDLE_DIR/dmg-staging"
+
+# Clean up any previous staging folder
+rm -rf "$DMG_STAGING"
+mkdir -p "$DMG_STAGING"
+
+# Copy app and create Applications symlink
+cp -R "$APP_BUNDLE" "$DMG_STAGING/"
+ln -s /Applications "$DMG_STAGING/Applications"
+
+# Create the DMG
 rm -f "$DMG_PATH"
-hdiutil create -volname "$APP_NAME" -srcfolder "$APP_BUNDLE" -ov -format UDZO "$DMG_PATH"
+hdiutil create -volname "$APP_NAME" -srcfolder "$DMG_STAGING" -ov -format UDZO "$DMG_PATH"
+
+# Clean up staging folder
+rm -rf "$DMG_STAGING"
 
 echo "✅ DMG created at: $DMG_PATH"
 
