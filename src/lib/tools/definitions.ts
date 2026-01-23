@@ -12,8 +12,8 @@ export const READ_DOCUMENT_TOOL: Tool = {
   input_schema: {
     type: 'object',
     properties: {},
-    required: []
-  }
+    required: [],
+  },
 };
 
 export const UPDATE_DOCUMENT_TOOL: Tool = {
@@ -27,20 +27,20 @@ export const UPDATE_DOCUMENT_TOOL: Tool = {
         type: 'string',
         enum: ['replace', 'insert', 'append'],
         description:
-          'How to update the document: "replace" replaces all content, "insert" adds at a specific position, "append" adds to the end'
+          'How to update the document: "replace" replaces all content, "insert" adds at a specific position, "append" adds to the end',
       },
       content: {
         type: 'string',
-        description: 'The text content to write to the document'
+        description: 'The text content to write to the document',
       },
       position: {
         type: 'number',
         description:
-          'Character position for insert operation (0-based). Only required when operation is "insert"'
-      }
+          'Character position for insert operation (0-based). Only required when operation is "insert"',
+      },
     },
-    required: ['operation', 'content']
-  }
+    required: ['operation', 'content'],
+  },
 };
 
 export const UPDATE_CONCEPT_TOOL: Tool = {
@@ -52,23 +52,24 @@ export const UPDATE_CONCEPT_TOOL: Tool = {
     properties: {
       title: {
         type: 'string',
-        description: 'Working title for the piece'
+        description: 'Working title for the piece',
       },
       coreArgument: {
         type: 'string',
-        description: 'The main thesis or central idea of the piece'
+        description: 'The main thesis or central idea of the piece',
       },
       audience: {
         type: 'string',
-        description: 'Description of the intended readers'
+        description: 'Description of the intended readers',
       },
       tone: {
         type: 'string',
-        description: 'The voice and style (e.g., "casual and conversational", "formal and academic")'
-      }
+        description:
+          'The voice and style (e.g., "casual and conversational", "formal and academic")',
+      },
     },
-    required: ['title', 'coreArgument', 'audience', 'tone']
-  }
+    required: ['title', 'coreArgument', 'audience', 'tone'],
+  },
 };
 
 export const UPDATE_OUTLINE_TOOL: Tool = {
@@ -86,27 +87,27 @@ export const UPDATE_OUTLINE_TOOL: Tool = {
           properties: {
             id: {
               type: 'string',
-              description: 'Unique identifier for this section'
+              description: 'Unique identifier for this section',
             },
             title: {
               type: 'string',
-              description: 'Section heading or name'
+              description: 'Section heading or name',
             },
             description: {
               type: 'string',
-              description: 'What this section covers and its purpose'
+              description: 'What this section covers and its purpose',
             },
             estimatedWords: {
               type: 'number',
-              description: 'Approximate word count target for this section'
-            }
+              description: 'Approximate word count target for this section',
+            },
           },
-          required: ['id', 'title', 'description']
-        }
-      }
+          required: ['id', 'title', 'description'],
+        },
+      },
     },
-    required: ['sections']
-  }
+    required: ['sections'],
+  },
 };
 
 export const UPDATE_STAGE_TOOL: Tool = {
@@ -119,11 +120,11 @@ export const UPDATE_STAGE_TOOL: Tool = {
       stage: {
         type: 'string',
         enum: ['concept', 'outline', 'draft', 'edits', 'polish'],
-        description: 'The stage to set the document to'
-      }
+        description: 'The stage to set the document to',
+      },
     },
-    required: ['stage']
-  }
+    required: ['stage'],
+  },
 };
 
 export const ADD_EDIT_SUGGESTION_TOOL: Tool = {
@@ -136,23 +137,23 @@ export const ADD_EDIT_SUGGESTION_TOOL: Tool = {
       scope: {
         type: 'string',
         description:
-          'What part of the document this affects (e.g., "introduction", "third paragraph", "conclusion")'
+          'What part of the document this affects (e.g., "introduction", "third paragraph", "conclusion")',
       },
       before: {
         type: 'string',
-        description: 'The original text being edited'
+        description: 'The original text being edited',
       },
       after: {
         type: 'string',
-        description: 'The suggested replacement text'
+        description: 'The suggested replacement text',
       },
       rationale: {
         type: 'string',
-        description: 'Why this change improves the writing'
-      }
+        description: 'Why this change improves the writing',
+      },
     },
-    required: ['scope', 'before', 'after']
-  }
+    required: ['scope', 'before', 'after'],
+  },
 };
 
 /**
@@ -164,7 +165,7 @@ export const ALL_TOOLS: Tool[] = [
   UPDATE_CONCEPT_TOOL,
   UPDATE_OUTLINE_TOOL,
   UPDATE_STAGE_TOOL,
-  ADD_EDIT_SUGGESTION_TOOL
+  ADD_EDIT_SUGGESTION_TOOL,
 ];
 
 /**

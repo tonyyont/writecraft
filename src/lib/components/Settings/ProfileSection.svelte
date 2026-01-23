@@ -38,7 +38,7 @@
 
   let hasChanges = $derived(
     displayName !== (authStore.profile?.displayName ?? '') ||
-    fullName !== (authStore.profile?.fullName ?? '')
+      fullName !== (authStore.profile?.fullName ?? '')
   );
 </script>
 
@@ -68,12 +68,7 @@
 
   <div class="form-group">
     <label for="email">Email</label>
-    <input
-      type="email"
-      id="email"
-      value={authStore.user?.email ?? ''}
-      disabled
-    />
+    <input type="email" id="email" value={authStore.user?.email ?? ''} disabled />
     <span class="help-text">Email cannot be changed</span>
   </div>
 
@@ -85,11 +80,7 @@
     <div class="success-message">Profile updated successfully</div>
   {/if}
 
-  <button
-    class="save-button"
-    onclick={handleSave}
-    disabled={isSaving || !hasChanges}
-  >
+  <button class="save-button" onclick={handleSave} disabled={isSaving || !hasChanges}>
     {#if isSaving}
       <span class="spinner"></span>
       Saving...
@@ -125,7 +116,9 @@
     border-radius: 8px;
     font-size: 14px;
     color: #fff;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
   }
 
   input::placeholder {
@@ -179,7 +172,9 @@
     font-weight: 500;
     color: #fff;
     cursor: pointer;
-    transition: background 0.2s, opacity 0.2s;
+    transition:
+      background 0.2s,
+      opacity 0.2s;
     align-self: flex-start;
   }
 

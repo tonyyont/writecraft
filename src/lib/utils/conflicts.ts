@@ -12,9 +12,9 @@ import type { OutlinePrompt } from '$lib/types/sidecar';
 // ============================================================================
 
 export interface DraftSection {
-  outlineSectionId: string;      // Which outline section this draft corresponds to
+  outlineSectionId: string; // Which outline section this draft corresponds to
   outlineSectionTitle: string;
-  content: string;               // The drafted content
+  content: string; // The drafted content
   startLine: number;
   endLine: number;
 }
@@ -23,14 +23,14 @@ export interface OutlineDraftConflict {
   sectionId: string;
   sectionTitle: string;
   conflictType: 'outline_modified' | 'outline_deleted' | 'outline_reordered';
-  outlineChange: string;         // Description of what changed in outline
-  affectedDraftPreview: string;  // First ~200 chars of affected draft content
+  outlineChange: string; // Description of what changed in outline
+  affectedDraftPreview: string; // First ~200 chars of affected draft content
 }
 
 export interface ConflictReport {
   hasConflicts: boolean;
   conflicts: OutlineDraftConflict[];
-  summary: string;               // Human-readable summary for the prompt
+  summary: string; // Human-readable summary for the prompt
 }
 
 // ============================================================================
@@ -85,14 +85,14 @@ function extractDraftSections(draftContent: string): DraftSection[] {
           outlineSectionTitle: currentSection.outlineSectionTitle,
           content: currentContent.join('\n').trim(),
           startLine,
-          endLine: i - 1
+          endLine: i - 1,
         });
       }
 
       // Start new section
       currentSection = {
         outlineSectionTitle: headerMatch[1].trim(),
-        outlineSectionId: '' // Will be matched later
+        outlineSectionId: '', // Will be matched later
       };
       currentContent = [];
       startLine = i;
@@ -108,7 +108,7 @@ function extractDraftSections(draftContent: string): DraftSection[] {
       outlineSectionTitle: currentSection.outlineSectionTitle,
       content: currentContent.join('\n').trim(),
       startLine,
-      endLine: lines.length - 1
+      endLine: lines.length - 1,
     });
   }
 
@@ -129,7 +129,7 @@ function matchDraftToOutline(
       if (titlesMatch(section.outlineSectionTitle, prompt.title)) {
         matched.set(prompt.id, {
           ...section,
-          outlineSectionId: prompt.id
+          outlineSectionId: prompt.id,
         });
         break;
       }
@@ -183,12 +183,14 @@ function sectionMeaningfullyChanged(
   }
 
   if (prev.estimatedWords !== curr.estimatedWords) {
-    changes.push(`word count estimate changed from ${prev.estimatedWords ?? 'unset'} to ${curr.estimatedWords ?? 'unset'}`);
+    changes.push(
+      `word count estimate changed from ${prev.estimatedWords ?? 'unset'} to ${curr.estimatedWords ?? 'unset'}`
+    );
   }
 
   return {
     changed: changes.length > 0,
-    description: changes.join('; ')
+    description: changes.join('; '),
   };
 }
 
@@ -216,7 +218,7 @@ export function detectOutlineDraftConflicts(
     return {
       hasConflicts: false,
       conflicts: [],
-      summary: 'No draft content to check for conflicts.'
+      summary: 'No draft content to check for conflicts.',
     };
   }
 
@@ -227,7 +229,7 @@ export function detectOutlineDraftConflicts(
     return {
       hasConflicts: false,
       conflicts: [],
-      summary: 'No recognizable sections found in draft content.'
+      summary: 'No recognizable sections found in draft content.',
     };
   }
 
@@ -235,8 +237,8 @@ export function detectOutlineDraftConflicts(
   const draftToOutlineMap = matchDraftToOutline(draftSections, previousOutline);
 
   // Create lookup maps
-  const prevOutlineById = new Map(previousOutline.map(p => [p.id, p]));
-  const currOutlineById = new Map(currentOutline.map(p => [p.id, p]));
+  const prevOutlineById = new Map(previousOutline.map((p) => [p.id, p]));
+  const currOutlineById = new Map(currentOutline.map((p) => [p.id, p]));
   const prevOutlineOrder = new Map(previousOutline.map((p, i) => [p.id, i]));
   const currOutlineOrder = new Map(currentOutline.map((p, i) => [p.id, i]));
 
@@ -254,7 +256,7 @@ export function detectOutlineDraftConflicts(
         sectionTitle: prevPrompt.title,
         conflictType: 'outline_deleted',
         outlineChange: `Section "${prevPrompt.title}" was removed from the outline`,
-        affectedDraftPreview: createPreview(draftSection.content)
+        affectedDraftPreview: createPreview(draftSection.content),
       });
       continue;
     }
@@ -267,7 +269,7 @@ export function detectOutlineDraftConflicts(
         sectionTitle: currPrompt.title,
         conflictType: 'outline_modified',
         outlineChange: modification.description,
-        affectedDraftPreview: createPreview(draftSection.content)
+        affectedDraftPreview: createPreview(draftSection.content),
       });
     }
 
@@ -284,7 +286,7 @@ export function detectOutlineDraftConflicts(
           sectionTitle: currPrompt.title,
           conflictType: 'outline_reordered',
           outlineChange: `Section moved from position ${prevOrder + 1} to position ${currOrder + 1}`,
-          affectedDraftPreview: createPreview(draftSection.content)
+          affectedDraftPreview: createPreview(draftSection.content),
         });
       }
     }
@@ -295,23 +297,24 @@ export function detectOutlineDraftConflicts(
   if (conflicts.length === 0) {
     summary = 'No conflicts detected between outline changes and draft content.';
   } else {
-    const deleted = conflicts.filter(c => c.conflictType === 'outline_deleted').length;
-    const modified = conflicts.filter(c => c.conflictType === 'outline_modified').length;
-    const reordered = conflicts.filter(c => c.conflictType === 'outline_reordered').length;
+    const deleted = conflicts.filter((c) => c.conflictType === 'outline_deleted').length;
+    const modified = conflicts.filter((c) => c.conflictType === 'outline_modified').length;
+    const reordered = conflicts.filter((c) => c.conflictType === 'outline_reordered').length;
 
     const parts: string[] = [];
     if (deleted > 0) parts.push(`${deleted} deleted`);
     if (modified > 0) parts.push(`${modified} modified`);
     if (reordered > 0) parts.push(`${reordered} reordered`);
 
-    summary = `Found ${conflicts.length} conflict(s): ${parts.join(', ')}. ` +
+    summary =
+      `Found ${conflicts.length} conflict(s): ${parts.join(', ')}. ` +
       'Draft content may need to be updated to match the new outline.';
   }
 
   return {
     hasConflicts: conflicts.length > 0,
     conflicts,
-    summary
+    summary,
   };
 }
 
@@ -336,7 +339,7 @@ export function formatConflictsForPrompt(report: ConflictReport): string {
     report.summary,
     '',
     'The following sections have potential conflicts that may need reconciliation:',
-    ''
+    '',
   ];
 
   for (const conflict of report.conflicts) {

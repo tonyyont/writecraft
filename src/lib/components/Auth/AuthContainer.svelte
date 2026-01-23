@@ -28,10 +28,21 @@
   <div class="auth-card">
     <div class="auth-header">
       <div class="logo">
-        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2.5" fill="none"/>
-          <path d="M16 28c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-          <circle cx="24" cy="18" r="4" stroke="currentColor" stroke-width="2.5" fill="none"/>
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 48 48"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2.5" fill="none" />
+          <path
+            d="M16 28c0-4.4 3.6-8 8-8s8 3.6 8 8"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+          />
+          <circle cx="24" cy="18" r="4" stroke="currentColor" stroke-width="2.5" fill="none" />
         </svg>
       </div>
       <h1>WriteCraft</h1>
@@ -39,18 +50,11 @@
     </div>
 
     {#if currentView === 'signin'}
-      <SignInForm
-        onSwitchToSignUp={switchToSignUp}
-        onSwitchToForgot={switchToForgot}
-      />
+      <SignInForm onSwitchToSignUp={switchToSignUp} onSwitchToForgot={switchToForgot} />
     {:else if currentView === 'signup'}
-      <SignUpForm
-        onSwitchToSignIn={switchToSignIn}
-      />
+      <SignUpForm onSwitchToSignIn={switchToSignIn} />
     {:else if currentView === 'forgot'}
-      <ForgotPassword
-        onSwitchToSignIn={switchToSignIn}
-      />
+      <ForgotPassword onSwitchToSignIn={switchToSignIn} />
     {/if}
   </div>
 

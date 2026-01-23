@@ -108,7 +108,7 @@
           errorMessage = 'No API key to test';
           return;
         }
-      } catch (e) {
+      } catch {
         testResult = 'error';
         errorMessage = 'Failed to retrieve existing key';
         return;
@@ -174,14 +174,34 @@
 </script>
 
 {#if open}
-  <div class="overlay" onclick={handleCancel} onkeydown={(e) => e.key === 'Escape' && handleCancel()} role="button" tabindex="0">
-    <div class="dialog" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabindex="-1">
+  <div
+    class="overlay"
+    onclick={handleCancel}
+    onkeydown={(e) => e.key === 'Escape' && handleCancel()}
+    role="button"
+    tabindex="0"
+  >
+    <div
+      class="dialog"
+      onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.stopPropagation()}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dialog-title"
+      tabindex="-1"
+    >
       <h2 id="dialog-title">Claude API Key</h2>
 
       {#if hasExistingKey && !isEditing}
         <!-- Connected state -->
         <div class="connected-state">
-          <div class="status-card {testResult === 'success' ? 'success' : testResult === 'error' ? 'error' : 'checking'}">
+          <div
+            class="status-card {testResult === 'success'
+              ? 'success'
+              : testResult === 'error'
+                ? 'error'
+                : 'checking'}"
+          >
             <div class="status-icon">
               {#if isTesting}
                 <span class="spinner"></span>
@@ -232,7 +252,10 @@
             <button
               type="button"
               class="edit-button"
-              onclick={() => { isEditing = true; apiKey = ''; }}
+              onclick={() => {
+                isEditing = true;
+                apiKey = '';
+              }}
               disabled={isLoading || isTesting}
             >
               Change Key
@@ -250,8 +273,11 @@
       {:else}
         <!-- Input state (no key or editing) -->
         <p class="description">
-          Your API key is stored securely in the macOS Keychain.
-          Get your key from <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>
+          Your API key is stored securely in the macOS Keychain. Get your key from <a
+            href="https://console.anthropic.com"
+            target="_blank"
+            rel="noopener">console.anthropic.com</a
+          >
         </p>
 
         <div class="input-group">
@@ -268,7 +294,7 @@
             <button
               type="button"
               class="toggle-visibility"
-              onclick={() => showKey = !showKey}
+              onclick={() => (showKey = !showKey)}
               disabled={isLoading || isTesting}
               aria-label={showKey ? 'Hide API key' : 'Show API key'}
             >
@@ -303,7 +329,14 @@
             <button
               type="button"
               class="cancel-button"
-              onclick={() => { if (isEditing) { isEditing = false; checkExistingKey(); } else { handleCancel(); } }}
+              onclick={() => {
+                if (isEditing) {
+                  isEditing = false;
+                  checkExistingKey();
+                } else {
+                  handleCancel();
+                }
+              }}
               disabled={isLoading || isTesting}
             >
               Cancel
@@ -504,7 +537,8 @@
     color: white;
   }
 
-  .checkmark, .error-icon {
+  .checkmark,
+  .error-icon {
     line-height: 1;
   }
 
@@ -518,7 +552,9 @@
   }
 
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .status-text {

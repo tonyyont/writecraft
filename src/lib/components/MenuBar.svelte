@@ -66,10 +66,12 @@
   async function handleOpen() {
     const selected = await open({
       multiple: false,
-      filters: [{
-        name: 'Markdown',
-        extensions: ['md']
-      }]
+      filters: [
+        {
+          name: 'Markdown',
+          extensions: ['md'],
+        },
+      ],
     });
 
     if (selected && typeof selected === 'string') {
@@ -88,11 +90,13 @@
 
   async function handleSaveAs() {
     const selected = await save({
-      filters: [{
-        name: 'Markdown',
-        extensions: ['md']
-      }],
-      defaultPath: documentStore.filename || 'untitled.md'
+      filters: [
+        {
+          name: 'Markdown',
+          extensions: ['md'],
+        },
+      ],
+      defaultPath: documentStore.filename || 'untitled.md',
     });
 
     if (selected) {
@@ -102,11 +106,13 @@
 
   async function handleNew() {
     const selected = await save({
-      filters: [{
-        name: 'Markdown',
-        extensions: ['md']
-      }],
-      defaultPath: 'untitled.md'
+      filters: [
+        {
+          name: 'Markdown',
+          extensions: ['md'],
+        },
+      ],
+      defaultPath: 'untitled.md',
     });
 
     if (selected) {
@@ -145,7 +151,7 @@
     });
 
     return () => {
-      unlisten.then(fn => fn());
+      unlisten.then((fn) => fn());
     };
   });
 </script>
@@ -181,7 +187,7 @@
     {/if}
   </div>
   <!-- User avatar button -->
-  <button class="user-button" onclick={() => settingsDialogOpen = true} title="Settings">
+  <button class="user-button" onclick={() => (settingsDialogOpen = true)} title="Settings">
     {#if authStore.user?.avatarUrl}
       <img src={authStore.user.avatarUrl} alt="Profile" class="user-avatar" />
     {:else}
@@ -192,8 +198,8 @@
   </button>
 </div>
 
-<SettingsDialog open={settingsDialogOpen} onClose={() => settingsDialogOpen = false} />
-<UpdateDialog open={updateDialogOpen} onClose={() => updateDialogOpen = false} />
+<SettingsDialog open={settingsDialogOpen} onClose={() => (settingsDialogOpen = false)} />
+<UpdateDialog open={updateDialogOpen} onClose={() => (updateDialogOpen = false)} />
 
 <style>
   .app-bar {

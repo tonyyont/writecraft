@@ -104,9 +104,9 @@
     --transition-normal: 0.2s ease;
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-    --shadow-md: 0 2px 4px rgba(0,0,0,0.1);
-    --shadow-lg: 0 4px 8px rgba(0,0,0,0.15);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.15);
   }
 
   .app-container {
@@ -133,12 +133,12 @@
   }
 
   :global(::-webkit-scrollbar-thumb) {
-    background: rgba(0,0,0,0.2);
+    background: rgba(0, 0, 0, 0.2);
     border-radius: 3px;
   }
 
   :global(::-webkit-scrollbar-thumb:hover) {
-    background: rgba(0,0,0,0.35);
+    background: rgba(0, 0, 0, 0.35);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -162,11 +162,11 @@
     }
 
     :global(::-webkit-scrollbar-thumb) {
-      background: rgba(255,255,255,0.2);
+      background: rgba(255, 255, 255, 0.2);
     }
 
     :global(::-webkit-scrollbar-thumb:hover) {
-      background: rgba(255,255,255,0.35);
+      background: rgba(255, 255, 255, 0.35);
     }
   }
 </style>

@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { checkForUpdates, downloadAndInstall, type UpdateInfo, type UpdateProgress } from '$lib/services/updater';
+  import {
+    checkForUpdates,
+    downloadAndInstall,
+    type UpdateInfo,
+    type UpdateProgress,
+  } from '$lib/services/updater';
 
   interface Props {
     open: boolean;
@@ -13,10 +18,14 @@
   let updateInfo = $state<UpdateInfo | null>(null);
   let error = $state<string | null>(null);
   let progress = $state<UpdateProgress | null>(null);
+  let dialogRef = $state<HTMLDialogElement | null>(null);
 
   $effect(() => {
-    if (open) {
+    if (open && dialogRef) {
+      dialogRef.showModal();
       checkUpdate();
+    } else if (!open && dialogRef) {
+      dialogRef.close();
     }
   });
 
@@ -61,6 +70,13 @@
     }
   }
 
+  function handleDialogClick(e: MouseEvent) {
+    // Close when clicking backdrop (the dialog element itself, not its contents)
+    if (e.target === dialogRef) {
+      handleClose();
+    }
+  }
+
   function formatBytes(bytes: number): string {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -70,93 +86,124 @@
   }
 </script>
 
-{#if open}
-  <div class="dialog-overlay" onclick={handleClose} onkeydown={(e) => e.key === 'Escape' && handleClose()} role="button" tabindex="-1">
-    <div class="dialog" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="update-title">
-      <div class="dialog-header">
-        <h2 id="update-title">Software Update</h2>
-        {#if !isDownloading}
-          <button class="close-btn" onclick={handleClose} aria-label="Close">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M1 1L13 13M1 13L13 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          </button>
-        {/if}
-      </div>
+<dialog
+  bind:this={dialogRef}
+  class="dialog-overlay"
+  onclick={handleDialogClick}
+  oncancel={(e) => {
+    e.preventDefault();
+    handleClose();
+  }}
+>
+  <div class="dialog">
+    <div class="dialog-header">
+      <h2 id="update-title">Software Update</h2>
+      {#if !isDownloading}
+        <button class="close-btn" onclick={handleClose} aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path
+              d="M1 1L13 13M1 13L13 1"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
+      {/if}
+    </div>
 
-      <div class="dialog-content">
-        {#if isChecking}
-          <div class="status">
-            <div class="spinner"></div>
-            <p>Checking for updates...</p>
-          </div>
-        {:else if error}
-          <div class="status error">
-            <p>{error}</p>
-            <button class="secondary-btn" onclick={checkUpdate}>Try Again</button>
-          </div>
-        {:else if isDownloading}
-          <div class="status">
-            <div class="spinner"></div>
-            <p>Downloading update...</p>
-            {#if progress && progress.total > 0}
-              <div class="progress-bar">
-                <div class="progress-fill" style="width: {(progress.downloaded / progress.total) * 100}%"></div>
-              </div>
-              <p class="progress-text">{formatBytes(progress.downloaded)} / {formatBytes(progress.total)}</p>
-            {/if}
-          </div>
-        {:else if updateInfo}
-          <div class="update-available">
-            <p class="version-info">
-              A new version of WriteCraft is available!
+    <div class="dialog-content">
+      {#if isChecking}
+        <div class="status">
+          <div class="spinner"></div>
+          <p>Checking for updates...</p>
+        </div>
+      {:else if error}
+        <div class="status error">
+          <p>{error}</p>
+          <button class="secondary-btn" onclick={checkUpdate}>Try Again</button>
+        </div>
+      {:else if isDownloading}
+        <div class="status">
+          <div class="spinner"></div>
+          <p>Downloading update...</p>
+          {#if progress && progress.total > 0}
+            <div class="progress-bar">
+              <div
+                class="progress-fill"
+                style="width: {(progress.downloaded / progress.total) * 100}%"
+              ></div>
+            </div>
+            <p class="progress-text">
+              {formatBytes(progress.downloaded)} / {formatBytes(progress.total)}
             </p>
-            <p class="version-numbers">
-              <span class="label">Current:</span> {updateInfo.currentVersion}
-              <span class="arrow">-></span>
-              <span class="label">New:</span> <strong>{updateInfo.version}</strong>
-            </p>
-            {#if updateInfo.body}
-              <div class="release-notes">
-                <p class="label">What's new:</p>
-                <p class="notes">{updateInfo.body}</p>
-              </div>
-            {/if}
-          </div>
-        {:else}
-          <div class="status up-to-date">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="2"/>
-              <path d="M16 24L22 30L32 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <p>WriteCraft is up to date!</p>
-          </div>
-        {/if}
-      </div>
-
-      {#if !isChecking && !isDownloading}
-        <div class="dialog-footer">
-          {#if updateInfo}
-            <button class="secondary-btn" onclick={handleClose}>Later</button>
-            <button class="primary-btn" onclick={installUpdate}>Install Update</button>
-          {:else if !error}
-            <button class="secondary-btn" onclick={handleClose}>Close</button>
           {/if}
+        </div>
+      {:else if updateInfo}
+        <div class="update-available">
+          <p class="version-info">A new version of WriteCraft is available!</p>
+          <p class="version-numbers">
+            <span class="label">Current:</span>
+            {updateInfo.currentVersion}
+            <span class="arrow">-></span>
+            <span class="label">New:</span> <strong>{updateInfo.version}</strong>
+          </p>
+          {#if updateInfo.body}
+            <div class="release-notes">
+              <p class="label">What's new:</p>
+              <p class="notes">{updateInfo.body}</p>
+            </div>
+          {/if}
+        </div>
+      {:else}
+        <div class="status up-to-date">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="2" />
+            <path
+              d="M16 24L22 30L32 18"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <p>WriteCraft is up to date!</p>
         </div>
       {/if}
     </div>
+
+    {#if !isChecking && !isDownloading}
+      <div class="dialog-footer">
+        {#if updateInfo}
+          <button class="secondary-btn" onclick={handleClose}>Later</button>
+          <button class="primary-btn" onclick={installUpdate}>Install Update</button>
+        {:else if !error}
+          <button class="secondary-btn" onclick={handleClose}>Close</button>
+        {/if}
+      </div>
+    {/if}
   </div>
-{/if}
+</dialog>
 
 <style>
   .dialog-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+  }
+
+  .dialog-overlay::backdrop {
+    background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(4px);
   }
 
@@ -242,7 +289,9 @@
   }
 
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .progress-bar {
@@ -327,7 +376,8 @@
     border-top: 1px solid var(--border-secondary, #333);
   }
 
-  .primary-btn, .secondary-btn {
+  .primary-btn,
+  .secondary-btn {
     padding: 8px 16px;
     border-radius: 6px;
     font-size: 13px;

@@ -69,16 +69,30 @@
   >
     {#if isCollapsed}
       <button class="expand-button" onclick={toggleCollapse} title="Expand panel (Cmd+B)">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M6 4L10 8L6 12"/>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path d="M6 4L10 8L6 12" />
         </svg>
       </button>
     {:else}
       <div class="panel-header">
         <span class="panel-title">Document</span>
         <button class="collapse-button" onclick={toggleCollapse} title="Collapse panel (Cmd+B)">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M10 4L6 8L10 12"/>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path d="M10 4L6 8L10 12" />
           </svg>
         </button>
       </div>
@@ -98,11 +112,13 @@
         </div>
       </div>
 
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
       <div
         class="resize-handle"
         onmousedown={startResize}
         role="separator"
         aria-orientation="vertical"
+        aria-label="Resize metadata panel"
         tabindex="-1"
       ></div>
     {/if}

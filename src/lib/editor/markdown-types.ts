@@ -1,7 +1,7 @@
 // Type declarations for tiptap-markdown storage
 // This is needed because tiptap-markdown doesn't provide TypeScript types
 
-import type { Editor } from '@tiptap/core';
+import type { Editor as _Editor } from '@tiptap/core';
 
 export interface MarkdownStorage {
   getMarkdown: () => string;

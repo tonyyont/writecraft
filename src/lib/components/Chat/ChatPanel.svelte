@@ -2,19 +2,9 @@
   import { emit } from '@tauri-apps/api/event';
   import { chatStore } from '$lib/stores/chat.svelte';
   import { documentStore } from '$lib/stores/document.svelte';
-  import { apiKeyStore } from '$lib/stores/apiKey.svelte';
-  import { authStore } from '$lib/stores/auth.svelte';
-  import { sendMessageWithTools, type ToolMessageCallbacks } from '$lib/services/claude';
-  import { buildEnrichedSystemPrompt, type PromptContext } from '$lib/prompts/system';
-  import { ALL_TOOLS } from '$lib/tools/definitions';
-  import { executeToolCall } from '$lib/tools/executor';
-  import type { Message, ContentBlock, ToolUseEvent } from '$lib/types/tools';
-  import { computeContentDiff, computeOutlineDiff } from '$lib/utils/diff';
-  import { detectOutlineDraftConflicts, formatConflictsForPrompt } from '$lib/utils/conflicts';
+  import { sendMessage, type AgentCallbacks } from '$lib/services/agent';
   import MessageList from './MessageList.svelte';
   import InputArea from './InputArea.svelte';
-
-  const MAX_ITERATIONS = 10;
 
   // Panel visibility state
   let isOpen = $state(true);
@@ -84,261 +74,22 @@
     document.body.style.userSelect = '';
   }
 
-  // Build the enriched system prompt with context
-  function buildSystemPrompt(): string {
-    const stage = documentStore.sidecar?.stage ?? 'concept';
-    const concept = chatStore.getConcept();
-    const outline = chatStore.getOutline();
-    const content = documentStore.content;
-    const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
+  // Agent callbacks for handling errors
+  const agentCallbacks: AgentCallbacks = {
+    onError: (message: string, apiKeyError: boolean) => {
+      errorMessage = message;
+      isApiKeyError = apiKeyError;
+    },
+  };
 
-    const context: PromptContext = {
-      stage,
-      concept,
-      outline,
-      documentPreview: content,
-      wordCount
-    };
-
-    // Check for changes since last seen (change tracking)
-    const changes = documentStore.getChangesSinceLastSeen();
-    if (changes) {
-      // Compute diffs if there were changes
-      const userChanges: PromptContext['userChanges'] = {};
-
-      if (changes.contentChanged && changes.previousContent !== null) {
-        const contentDiff = computeContentDiff(changes.previousContent, changes.currentContent);
-        if (contentDiff.hasChanges) {
-          userChanges.contentDiff = {
-            summary: contentDiff.summary,
-            diffText: contentDiff.diffText
-          };
-        }
-      }
-
-      if (changes.outlineChanged) {
-        const outlineDiff = computeOutlineDiff(changes.previousOutline, changes.currentOutline);
-        if (outlineDiff.hasChanges) {
-          userChanges.outlineDiff = {
-            summary: outlineDiff.summary
-          };
-
-          // Detect conflicts if outline changed and there's content
-          if (changes.previousOutline && changes.currentOutline && content.trim()) {
-            const conflictReport = detectOutlineDraftConflicts(
-              changes.previousOutline,
-              changes.currentOutline,
-              content
-            );
-            if (conflictReport.hasConflicts) {
-              context.conflicts = {
-                summary: conflictReport.summary,
-                details: formatConflictsForPrompt(conflictReport)
-              };
-            }
-          }
-        }
-      }
-
-      if (changes.stageChanged && changes.previousStage && changes.currentStage) {
-        userChanges.stageChange = {
-          from: changes.previousStage,
-          to: changes.currentStage
-        };
-      }
-
-      // Only add userChanges if there are actual changes
-      if (Object.keys(userChanges).length > 0) {
-        context.userChanges = userChanges;
-      }
-    }
-
-    return buildEnrichedSystemPrompt(context);
-  }
-
-  // Convert chat messages to API format
-  function convertMessagesToApiFormat(excludeId?: string): Message[] {
-    return chatStore.messages
-      .filter(msg => {
-        // Exclude the specified ID (current placeholder message)
-        if (msg.id === excludeId) return false;
-
-        // Filter out messages with empty content
-        // Claude API requires all messages to have non-empty content
-        // (except for the optional final assistant message, but we handle that separately)
-        if (typeof msg.content === 'string') {
-          return msg.content.trim() !== '';
-        }
-        // For ContentBlock[], check if it has any blocks with actual content
-        if (Array.isArray(msg.content)) {
-          return msg.content.length > 0 && msg.content.some(block => {
-            if (block.type === 'text') return block.text.trim() !== '';
-            if (block.type === 'tool_use') return true;
-            if (block.type === 'tool_result') return true;
-            return false;
-          });
-        }
-        return false;
-      })
-      .map(msg => {
-        // Handle both string and ContentBlock[] content
-        if (typeof msg.content === 'string') {
-          return {
-            role: msg.role,
-            content: msg.content
-          };
-        }
-        // Content is already ContentBlock[]
-        return {
-          role: msg.role,
-          content: msg.content
-        };
-      });
-  }
-
-  // Handle sending a message with orchestration loop
+  // Handle sending a message
   async function handleSend(userContent: string) {
     // Clear any previous error
     errorMessage = null;
+    isApiKeyError = false;
 
-    // Add the user's message
-    chatStore.addMessage('user', userContent);
-
-    // Run the agent loop
-    await runAgentLoop();
-  }
-
-  // Agent orchestration loop
-  async function runAgentLoop() {
-    chatStore.setLoading(true);
-
-    let iteration = 0;
-    let currentAssistantMessageId: string | null = null;
-
-    try {
-      while (iteration < MAX_ITERATIONS) {
-        iteration++;
-
-        // Build the system prompt with current context
-        const systemPrompt = buildSystemPrompt();
-
-        // Get messages to send, excluding any placeholder assistant message
-        const messagesToSend = convertMessagesToApiFormat(currentAssistantMessageId ?? undefined);
-
-        // Create streaming message for text content
-        const currentAssistantMessage = chatStore.addMessage('assistant', '');
-        currentAssistantMessageId = currentAssistantMessage.id;
-        chatStore.setStreamingMessageId(currentAssistantMessageId);
-        let accumulatedText = '';
-
-        // Callbacks for streaming
-        const callbacks: ToolMessageCallbacks = {
-          onChunk: (chunk: string, _done: boolean) => {
-            accumulatedText += chunk;
-            chatStore.updateMessage(currentAssistantMessageId!, accumulatedText);
-          },
-          onError: (error: string) => {
-            errorMessage = error;
-          }
-        };
-
-        // Send to Claude with tools
-        const response = await sendMessageWithTools(
-          messagesToSend,
-          systemPrompt,
-          ALL_TOOLS,
-          callbacks
-        );
-
-        // Increment usage count after successful API call
-        authStore.incrementUsage();
-
-        // Update the message with final content (text and/or tool uses)
-        if (response.toolUses.length > 0) {
-          // Replace with proper content blocks including tool uses
-          chatStore.updateMessage(currentAssistantMessageId, buildAssistantContent(response.textContent, response.toolUses));
-        } else if (response.textContent !== accumulatedText) {
-          // Ensure final text content is correct
-          chatStore.updateMessage(currentAssistantMessageId, response.textContent);
-        }
-
-        // Clear streaming state for this message
-        chatStore.setStreamingMessageId(null);
-
-        // If no tool uses, or stop reason is end_turn, we're done
-        if (response.toolUses.length === 0 || response.stopReason === 'end_turn') {
-          break;
-        }
-
-        // Execute each tool and collect results
-        const toolResults = await Promise.all(
-          response.toolUses.map(toolUse => executeToolCall(toolUse))
-        );
-
-        // Add tool results as a user message
-        chatStore.addToolResults(toolResults);
-
-        // Reset for next iteration - the assistant message is now complete
-        currentAssistantMessageId = null;
-
-        // Continue the loop - Claude will see the tool results
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      errorMessage = message;
-
-      // Check if this is an API key related error
-      const lowerMessage = message.toLowerCase();
-      isApiKeyError = lowerMessage.includes('no api key') ||
-                      lowerMessage.includes('invalid api key') ||
-                      lowerMessage.includes('api key') ||
-                      lowerMessage.includes('unauthorized') ||
-                      lowerMessage.includes('401');
-
-      // Update the API key store if key is invalid
-      if (isApiKeyError) {
-        apiKeyStore.markInvalid(message);
-      }
-
-      // Update the current assistant message with error if it exists and is empty
-      if (currentAssistantMessageId) {
-        const lastMessage = chatStore.messages.find(m => m.id === currentAssistantMessageId);
-        if (lastMessage) {
-          const content = lastMessage.content;
-          const isEmpty = typeof content === 'string' ? content === '' : content.length === 0;
-          if (isEmpty) {
-            // Remove the empty message instead of showing error there
-            chatStore.removeMessage(currentAssistantMessageId);
-          }
-        }
-      }
-    } finally {
-      chatStore.setLoading(false);
-      // Record what Claude has now seen for change tracking
-      documentStore.snapshotLastSeen();
-      // Refresh usage count from server to stay in sync
-      authStore.fetchSubscriptionInfo();
-    }
-  }
-
-  // Build content blocks for assistant message
-  function buildAssistantContent(text: string, toolUses: ToolUseEvent[]): ContentBlock[] {
-    const blocks: ContentBlock[] = [];
-
-    if (text.trim()) {
-      blocks.push({ type: 'text', text });
-    }
-
-    for (const toolUse of toolUses) {
-      blocks.push({
-        type: 'tool_use',
-        id: toolUse.id,
-        name: toolUse.name,
-        input: toolUse.input
-      });
-    }
-
-    return blocks;
+    // Send message via agent service
+    await sendMessage(userContent, agentCallbacks);
   }
 
   // Toggle panel visibility
@@ -352,11 +103,13 @@
 {#if documentStore.currentPath}
   <div class="chat-panel-container" class:closed={!isOpen}>
     {#if isOpen}
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
       <div
         class="resize-handle"
         onmousedown={startResize}
         role="separator"
         aria-orientation="vertical"
+        aria-label="Resize chat panel"
         tabindex="-1"
       ></div>
       <div class="chat-panel" style="width: {panelWidth}px">
@@ -364,12 +117,15 @@
           <span class="panel-title">Writing Assistant</span>
           <button class="close-button" onclick={togglePanel} title="Close panel (Cmd+L)">
             <svg width="14" height="14" viewBox="0 0 14 14">
-              <path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="1.5" />
             </svg>
           </button>
         </div>
 
-        <MessageList messages={chatStore.messages} streamingMessageId={chatStore.streamingMessageId} />
+        <MessageList
+          messages={chatStore.messages}
+          streamingMessageId={chatStore.streamingMessageId}
+        />
 
         {#if errorMessage}
           <div class="error-banner" class:api-key-error={isApiKeyError}>
@@ -382,14 +138,19 @@
                 {/if}
               </span>
               {#if isApiKeyError}
-                <button class="error-action" onclick={openSettings}>
-                  Configure API Key
-                </button>
+                <button class="error-action" onclick={openSettings}> Configure API Key </button>
               {/if}
             </div>
-            <button class="error-dismiss" onclick={() => { errorMessage = null; isApiKeyError = false; }} aria-label="Dismiss error">
+            <button
+              class="error-dismiss"
+              onclick={() => {
+                errorMessage = null;
+                isApiKeyError = false;
+              }}
+              aria-label="Dismiss error"
+            >
               <svg width="12" height="12" viewBox="0 0 14 14">
-                <path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="1.5" />
               </svg>
             </button>
           </div>
@@ -399,7 +160,14 @@
       </div>
     {:else}
       <button class="open-button" onclick={togglePanel} title="Open panel (Cmd+L)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
         </svg>
       </button>
@@ -491,7 +259,9 @@
     color: white;
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
   }
 
   .open-button:hover {

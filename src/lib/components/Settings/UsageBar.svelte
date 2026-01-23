@@ -79,7 +79,9 @@
   .progress-fill {
     height: 100%;
     border-radius: 3px;
-    transition: width 0.3s ease, background-color 0.3s ease;
+    transition:
+      width 0.3s ease,
+      background-color 0.3s ease;
   }
 
   .usage-warning {

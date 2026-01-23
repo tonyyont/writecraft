@@ -1,3 +1,33 @@
+/**
+ * Document store for managing the current document state.
+ *
+ * This store handles:
+ * - Loading and saving markdown documents
+ * - Managing the associated sidecar metadata (.fizz.json)
+ * - Tracking document changes for the AI assistant
+ * - Auto-save with debouncing
+ *
+ * The store maintains two sets of state:
+ * 1. Current document state (content, sidecar, isDirty)
+ * 2. "Last seen" state for AI change tracking
+ *
+ * @example
+ * ```typescript
+ * import { documentStore } from '$lib/stores/document.svelte';
+ *
+ * // Load a document
+ * await documentStore.loadDocument('/path/to/document.md');
+ *
+ * // Update content (triggers auto-save)
+ * documentStore.updateContent('New content here');
+ *
+ * // Check for changes since AI last saw document
+ * const changes = documentStore.getChangesSinceLastSeen();
+ * ```
+ *
+ * @module stores/document
+ */
+
 import { invoke } from '@tauri-apps/api/core';
 import type { Sidecar, DocumentStage, OutlinePrompt } from '$lib/types/sidecar';
 import { recentsStore } from './recents.svelte';
@@ -207,7 +237,7 @@ function getChangesSinceLastSeen(): ChangesSinceLastSeen | null {
     currentOutline,
     stageChanged,
     previousStage: lastSeenStage,
-    currentStage
+    currentStage,
   };
 }
 
@@ -279,16 +309,36 @@ function closeDocument(): void {
 
 // Export reactive getters and functions
 export const documentStore = {
-  get currentPath() { return currentPath; },
-  get content() { return content; },
-  get sidecar() { return sidecar; },
-  get isDirty() { return isDirty; },
-  get isLoading() { return isLoading; },
-  get error() { return error; },
-  get filename() { return getFilename(); },
-  get lastSeenContent() { return lastSeenContent; },
-  get lastSeenOutline() { return lastSeenOutline; },
-  get lastSeenStage() { return lastSeenStage; },
+  get currentPath() {
+    return currentPath;
+  },
+  get content() {
+    return content;
+  },
+  get sidecar() {
+    return sidecar;
+  },
+  get isDirty() {
+    return isDirty;
+  },
+  get isLoading() {
+    return isLoading;
+  },
+  get error() {
+    return error;
+  },
+  get filename() {
+    return getFilename();
+  },
+  get lastSeenContent() {
+    return lastSeenContent;
+  },
+  get lastSeenOutline() {
+    return lastSeenOutline;
+  },
+  get lastSeenStage() {
+    return lastSeenStage;
+  },
 
   loadDocument,
   saveDocument,
@@ -301,5 +351,5 @@ export const documentStore = {
   closeDocument,
   flushPendingSaves,
   snapshotLastSeen,
-  getChangesSinceLastSeen
+  getChangesSinceLastSeen,
 };

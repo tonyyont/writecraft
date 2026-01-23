@@ -18,7 +18,7 @@
 
   function startEditing() {
     if (outline && outline.length > 0) {
-      editPrompts = outline.map(p => ({ ...p }));
+      editPrompts = outline.map((p) => ({ ...p }));
     } else {
       // Start with one empty prompt
       editPrompts = [createEmptyPrompt()];
@@ -33,7 +33,7 @@
 
   function saveEditing() {
     // Filter out empty prompts
-    const filtered = editPrompts.filter(p => p.title.trim() || p.description.trim());
+    const filtered = editPrompts.filter((p) => p.title.trim() || p.description.trim());
     chatStore.updateOutline(filtered);
     isEditing = false;
   }
@@ -43,7 +43,7 @@
       id: crypto.randomUUID(),
       title: '',
       description: '',
-      estimatedWords: null
+      estimatedWords: null,
     };
   }
 
@@ -66,21 +66,40 @@
 </script>
 
 <div class="card" class:editing={isEditing}>
-  <div class="card-header" onclick={toggleExpand} onkeydown={(e) => e.key === 'Enter' && toggleExpand()} role="button" tabindex="0">
+  <div
+    class="card-header"
+    onclick={toggleExpand}
+    onkeydown={(e) => e.key === 'Enter' && toggleExpand()}
+    role="button"
+    tabindex="0"
+  >
     <span class="card-title">
       <svg class="icon" class:rotated={!isExpanded} width="12" height="12" viewBox="0 0 12 12">
-        <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+        <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" fill="none" />
       </svg>
       Outline
     </span>
     {#if isEditing}
-      <button class="close-button" onclick={(e) => { e.stopPropagation(); cancelEditing(); }} title="Close">
+      <button
+        class="close-button"
+        onclick={(e) => {
+          e.stopPropagation();
+          cancelEditing();
+        }}
+        title="Close"
+      >
         <svg width="12" height="12" viewBox="0 0 12 12">
-          <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" stroke-width="1.5" />
         </svg>
       </button>
     {:else}
-      <button class="edit-button" onclick={(e) => { e.stopPropagation(); startEditing(); }}>Edit</button>
+      <button
+        class="edit-button"
+        onclick={(e) => {
+          e.stopPropagation();
+          startEditing();
+        }}>Edit</button
+      >
     {/if}
   </div>
 
@@ -95,7 +114,7 @@
                   <span class="prompt-number">{index + 1}.</span>
                   <button class="remove-button" onclick={() => removePrompt(index)} title="Remove">
                     <svg width="12" height="12" viewBox="0 0 12 12">
-                      <path d="M3 3L9 9M9 3L3 9" stroke="currentColor" stroke-width="1.5"/>
+                      <path d="M3 3L9 9M9 3L3 9" stroke="currentColor" stroke-width="1.5" />
                     </svg>
                   </button>
                 </div>
@@ -103,13 +122,15 @@
                   type="text"
                   placeholder="Section title"
                   value={prompt.title}
-                  oninput={(e) => updatePrompt(index, 'title', (e.target as HTMLInputElement).value)}
+                  oninput={(e) =>
+                    updatePrompt(index, 'title', (e.target as HTMLInputElement).value)}
                 />
                 <textarea
                   placeholder="Description or key points..."
                   rows="2"
                   value={prompt.description}
-                  oninput={(e) => updatePrompt(index, 'description', (e.target as HTMLTextAreaElement).value)}
+                  oninput={(e) =>
+                    updatePrompt(index, 'description', (e.target as HTMLTextAreaElement).value)}
                 ></textarea>
               </div>
             {/each}

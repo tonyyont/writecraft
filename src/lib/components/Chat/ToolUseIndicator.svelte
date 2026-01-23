@@ -9,12 +9,12 @@
   // Get human-readable tool name
   function getToolLabel(toolName: string): string {
     const labels: Record<string, string> = {
-      'read_document': 'Reading document',
-      'update_document': 'Updating document',
-      'update_concept': 'Recording concept',
-      'update_outline': 'Creating outline',
-      'update_stage': 'Updating stage',
-      'add_edit_suggestion': 'Suggesting edit'
+      read_document: 'Reading document',
+      update_document: 'Updating document',
+      update_concept: 'Recording concept',
+      update_outline: 'Creating outline',
+      update_stage: 'Updating stage',
+      add_edit_suggestion: 'Suggesting edit',
     };
     return labels[toolName] || toolName;
   }
@@ -22,12 +22,12 @@
   // Get icon for tool
   function getToolIcon(toolName: string): string {
     const icons: Record<string, string> = {
-      'read_document': '📖',
-      'update_document': '✏️',
-      'update_concept': '💡',
-      'update_outline': '📝',
-      'update_stage': '🔄',
-      'add_edit_suggestion': '✨'
+      read_document: '📖',
+      update_document: '✏️',
+      update_concept: '💡',
+      update_outline: '📝',
+      update_stage: '🔄',
+      add_edit_suggestion: '✨',
     };
     return icons[toolName] || '🔧';
   }

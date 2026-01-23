@@ -20,7 +20,7 @@
     try {
       await authStore.resetPassword(email);
       success = true;
-    } catch (error) {
+    } catch {
       // Error is handled by the store
     } finally {
       isSubmitting = false;
@@ -31,9 +31,21 @@
 {#if success}
   <div class="success-message">
     <div class="success-icon">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-        <path d="M8 12l2.5 2.5L16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <svg
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+        <path
+          d="M8 12l2.5 2.5L16 9"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
       </svg>
     </div>
     <h2>Check your email</h2>
@@ -69,11 +81,7 @@
       />
     </div>
 
-    <button
-      type="submit"
-      class="submit-button"
-      disabled={isSubmitting || !email}
-    >
+    <button type="submit" class="submit-button" disabled={isSubmitting || !email}>
       {#if isSubmitting}
         <span class="spinner"></span>
         Sending...
@@ -83,8 +91,20 @@
     </button>
 
     <button type="button" class="back-button" onclick={onSwitchToSignIn}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M15 18l-6-6 6-6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
       </svg>
       Back to Sign In
     </button>
@@ -175,7 +195,9 @@
     border-radius: 8px;
     font-size: 14px;
     color: #fff;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
   }
 
   input::placeholder {
@@ -207,7 +229,9 @@
     font-weight: 600;
     color: #fff;
     cursor: pointer;
-    transition: background 0.2s, opacity 0.2s;
+    transition:
+      background 0.2s,
+      opacity 0.2s;
   }
 
   .submit-button:hover:not(:disabled) {
@@ -247,7 +271,9 @@
     font-size: 14px;
     color: #888;
     cursor: pointer;
-    transition: background 0.2s, color 0.2s;
+    transition:
+      background 0.2s,
+      color 0.2s;
   }
 
   .back-button:hover {

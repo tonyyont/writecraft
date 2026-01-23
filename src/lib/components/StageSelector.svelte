@@ -17,7 +17,7 @@
 
 {#if documentStore.sidecar}
   <div class="stage-selector">
-    {#each stages as stage, index}
+    {#each stages as stage, index (stage)}
       {@const isCompleted = stages.indexOf(documentStore.sidecar.stage) > index}
       {@const isActive = documentStore.sidecar.stage === stage}
       <button
@@ -29,8 +29,20 @@
       >
         <span class="stage-indicator">
           {#if isCompleted}
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M2.5 6L5 8.5L9.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M2.5 6L5 8.5L9.5 3.5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
           {:else}
             {index + 1}
@@ -61,7 +73,9 @@
     font-size: 12px;
     cursor: pointer;
     color: #666;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
     white-space: nowrap;
     text-align: left;
   }
@@ -105,7 +119,9 @@
     font-weight: 500;
     color: #666;
     flex-shrink: 0;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
   }
 
   .stage-name {

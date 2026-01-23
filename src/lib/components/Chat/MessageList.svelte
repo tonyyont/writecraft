@@ -31,7 +31,7 @@
   function shouldHideMessage(content: MessageContent): boolean {
     if (typeof content === 'string') return false;
     // Hide messages that only contain tool_result blocks
-    return content.length > 0 && content.every(block => block.type === 'tool_result');
+    return content.length > 0 && content.every((block) => block.type === 'tool_result');
   }
 
   // Get text content from message
@@ -40,21 +40,25 @@
 
     // Extract text from content blocks
     return content
-      .filter((block): block is ContentBlock & { type: 'text'; text: string } => block.type === 'text')
-      .map(block => block.text)
+      .filter(
+        (block): block is ContentBlock & { type: 'text'; text: string } => block.type === 'text'
+      )
+      .map((block) => block.text)
       .join('\n');
   }
 
   // Get tool use blocks from message
-  function getToolUses(content: MessageContent): Array<{ id: string; name: string; input: Record<string, unknown> }> {
+  function getToolUses(
+    content: MessageContent
+  ): Array<{ id: string; name: string; input: Record<string, unknown> }> {
     if (typeof content === 'string') return [];
 
     return content
       .filter((block): block is ContentBlock & { type: 'tool_use' } => block.type === 'tool_use')
-      .map(block => ({
+      .map((block) => ({
         id: block.id,
         name: block.name,
-        input: block.input
+        input: block.input,
       }));
   }
 
@@ -66,21 +70,23 @@
 
   // Simple markdown rendering (basic support)
   function renderMarkdown(text: string): string {
-    return text
-      // Code blocks (must come before inline code)
-      .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="lang-$1">$2</code></pre>')
-      // Inline code
-      .replace(/`([^`]+)`/g, '<code>$1</code>')
-      // Bold
-      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-      // Italic
-      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-      // Strikethrough
-      .replace(/~~([^~]+)~~/g, '<del>$1</del>')
-      // Links
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-      // Line breaks (preserve newlines)
-      .replace(/\n/g, '<br>');
+    return (
+      text
+        // Code blocks (must come before inline code)
+        .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="lang-$1">$2</code></pre>')
+        // Inline code
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        // Bold
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        // Italic
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+        // Strikethrough
+        .replace(/~~([^~]+)~~/g, '<del>$1</del>')
+        // Links
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+        // Line breaks (preserve newlines)
+        .replace(/\n/g, '<br>')
+    );
   }
 
   // Render streaming text with word-by-word animation
@@ -89,24 +95,26 @@
     const prevCount = previousWordCounts.get(messageId) || 0;
 
     // Update word count for next render
-    const wordCount = words.filter(w => w.trim()).length;
+    const wordCount = words.filter((w) => w.trim()).length;
     if (wordCount !== prevCount) {
       previousWordCounts.set(messageId, wordCount);
     }
 
     let wordIndex = 0;
-    return words.map(word => {
-      if (!word.trim()) {
-        // Preserve whitespace
-        return word;
-      }
-      wordIndex++;
-      const isNew = wordIndex > prevCount;
-      if (isNew) {
-        return `<span class="streaming-word" style="animation-delay: ${(wordIndex - prevCount - 1) * 30}ms">${escapeHtml(word)}</span>`;
-      }
-      return escapeHtml(word);
-    }).join('');
+    return words
+      .map((word) => {
+        if (!word.trim()) {
+          // Preserve whitespace
+          return word;
+        }
+        wordIndex++;
+        const isNew = wordIndex > prevCount;
+        if (isNew) {
+          return `<span class="streaming-word" style="animation-delay: ${(wordIndex - prevCount - 1) * 30}ms">${escapeHtml(word)}</span>`;
+        }
+        return escapeHtml(word);
+      })
+      .join('');
   }
 
   // Escape HTML special characters
@@ -129,7 +137,7 @@
   // Filter out hidden messages
   $effect(() => {
     // This effect exists to trigger re-render when messages change
-    messages;
+    void messages;
   });
 </script>
 
@@ -137,12 +145,27 @@
   {#if messages.length === 0}
     <div class="empty-state">
       <div class="empty-icon">
-        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="4" y="8" width="40" height="28" rx="4" stroke="currentColor" stroke-width="2" fill="none"/>
-          <circle cx="16" cy="22" r="2" fill="currentColor"/>
-          <circle cx="24" cy="22" r="2" fill="currentColor"/>
-          <circle cx="32" cy="22" r="2" fill="currentColor"/>
-          <path d="M12 36L8 44V36H12Z" stroke="currentColor" stroke-width="2" fill="none"/>
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 48 48"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <rect
+            x="4"
+            y="8"
+            width="40"
+            height="28"
+            rx="4"
+            stroke="currentColor"
+            stroke-width="2"
+            fill="none"
+          />
+          <circle cx="16" cy="22" r="2" fill="currentColor" />
+          <circle cx="24" cy="22" r="2" fill="currentColor" />
+          <circle cx="32" cy="22" r="2" fill="currentColor" />
+          <path d="M12 36L8 44V36H12Z" stroke="currentColor" stroke-width="2" fill="none" />
         </svg>
       </div>
       <h3 class="empty-headline">Start a conversation</h3>

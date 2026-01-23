@@ -1,4 +1,39 @@
-import type { ChatMessage, Sidecar, ConceptSnapshot, OutlinePrompt, MessageContent } from '$lib/types/sidecar';
+/**
+ * Chat store for managing conversation state with the AI assistant.
+ *
+ * This store handles:
+ * - Chat messages (user and assistant)
+ * - Tool use/result message flows
+ * - Streaming message state
+ * - Synchronization with document sidecar
+ *
+ * Messages support both simple text and complex content blocks
+ * (tool_use, tool_result) for the agentic interaction pattern.
+ *
+ * @example
+ * ```typescript
+ * import { chatStore } from '$lib/stores/chat.svelte';
+ *
+ * // Add a user message
+ * chatStore.addMessage('user', 'Help me improve this paragraph');
+ *
+ * // Check current messages
+ * console.log(chatStore.messages.length);
+ *
+ * // Update streaming assistant message
+ * chatStore.updateMessage(messageId, 'Updated content...');
+ * ```
+ *
+ * @module stores/chat
+ */
+
+import type {
+  ChatMessage,
+  Sidecar,
+  ConceptSnapshot,
+  OutlinePrompt,
+  MessageContent,
+} from '$lib/types/sidecar';
 import type { ContentBlock, ToolResult, ToolUseEvent } from '$lib/types/tools';
 import { documentStore } from './document.svelte';
 
@@ -18,7 +53,7 @@ function addMessage(role: 'user' | 'assistant', content: MessageContent): ChatMe
     id: generateId(),
     role,
     content,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   };
 
   messages = [...messages, message];
@@ -31,9 +66,7 @@ function addMessage(role: 'user' | 'assistant', content: MessageContent): ChatMe
 
 // Update an existing message's content (used for streaming)
 function updateMessage(id: string, content: MessageContent): void {
-  messages = messages.map(msg =>
-    msg.id === id ? { ...msg, content } : msg
-  );
+  messages = messages.map((msg) => (msg.id === id ? { ...msg, content } : msg));
 
   // Sync to sidecar after update
   syncToSidecar();
@@ -41,17 +74,17 @@ function updateMessage(id: string, content: MessageContent): void {
 
 // Remove a message by ID
 function removeMessage(id: string): void {
-  messages = messages.filter(msg => msg.id !== id);
+  messages = messages.filter((msg) => msg.id !== id);
   syncToSidecar();
 }
 
 // Add tool result as a user message with tool_result content blocks
 function addToolResults(results: ToolResult[]): ChatMessage {
-  const blocks: ContentBlock[] = results.map(result => ({
+  const blocks: ContentBlock[] = results.map((result) => ({
     type: 'tool_result' as const,
     tool_use_id: result.tool_use_id,
     content: result.content,
-    is_error: result.is_error
+    is_error: result.is_error,
   }));
 
   return addMessage('user', blocks);
@@ -65,7 +98,7 @@ function addAssistantWithToolUses(textContent: string, toolUses: ToolUseEvent[])
   if (textContent.trim()) {
     blocks.push({
       type: 'text' as const,
-      text: textContent
+      text: textContent,
     });
   }
 
@@ -75,7 +108,7 @@ function addAssistantWithToolUses(textContent: string, toolUses: ToolUseEvent[])
       type: 'tool_use' as const,
       id: toolUse.id,
       name: toolUse.name,
-      input: toolUse.input
+      input: toolUse.input,
     });
   }
 
@@ -109,8 +142,8 @@ function syncToSidecar(): void {
     documentStore.updateSidecar({
       conversation: {
         messages: exportToSidecar(),
-        summary: currentSidecar.conversation.summary
-      }
+        summary: currentSidecar.conversation.summary,
+      },
     });
   }
 }
@@ -139,13 +172,13 @@ function updateConcept(concept: ConceptSnapshot): void {
   if (currentSidecar) {
     const updatedConcept = {
       ...concept,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
     documentStore.updateSidecar({
       concept: {
         current: updatedConcept,
-        versions: [...currentSidecar.concept.versions, updatedConcept]
-      }
+        versions: [...currentSidecar.concept.versions, updatedConcept],
+      },
     });
   }
 }
@@ -161,22 +194,28 @@ function updateOutline(prompts: OutlinePrompt[]): void {
   if (currentSidecar) {
     const snapshot = {
       prompts,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
     documentStore.updateSidecar({
       outline: {
         current: prompts,
-        versions: [...currentSidecar.outline.versions, snapshot]
-      }
+        versions: [...currentSidecar.outline.versions, snapshot],
+      },
     });
   }
 }
 
 // Export reactive getters and functions
 export const chatStore = {
-  get messages() { return messages; },
-  get isLoading() { return isLoading; },
-  get streamingMessageId() { return streamingMessageId; },
+  get messages() {
+    return messages;
+  },
+  get isLoading() {
+    return isLoading;
+  },
+  get streamingMessageId() {
+    return streamingMessageId;
+  },
 
   addMessage,
   updateMessage,
@@ -191,5 +230,5 @@ export const chatStore = {
   getConcept,
   updateConcept,
   getOutline,
-  updateOutline
+  updateOutline,
 };

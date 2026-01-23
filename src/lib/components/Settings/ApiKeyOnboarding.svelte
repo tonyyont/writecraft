@@ -82,8 +82,15 @@
   <div class="onboarding-dialog">
     <div class="logo-container">
       <div class="logo">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
         </svg>
       </div>
     </div>
@@ -95,7 +102,11 @@
       <div class="step">
         <span class="step-number">1</span>
         <span class="step-text">
-          Get your API key from <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>
+          Get your API key from <a
+            href="https://console.anthropic.com/settings/keys"
+            target="_blank"
+            rel="noopener">console.anthropic.com</a
+          >
         </span>
       </div>
       <div class="step">
@@ -118,7 +129,7 @@
         <button
           type="button"
           class="toggle-visibility"
-          onclick={() => showKey = !showKey}
+          onclick={() => (showKey = !showKey)}
           disabled={isLoading || isTesting}
           aria-label={showKey ? 'Hide API key' : 'Show API key'}
         >
@@ -131,12 +142,16 @@
       <div class="test-result {testResult}">
         {#if testResult === 'success'}
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/>
+            <path
+              d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"
+            />
           </svg>
           API key is valid
         {:else}
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z"/>
+            <path
+              d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z"
+            />
           </svg>
           {errorMessage || 'Invalid API key'}
         {/if}
@@ -170,7 +185,9 @@
 
     <p class="security-note">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-        <path d="M8 1a3.5 3.5 0 00-3.5 3.5V6H4a2 2 0 00-2 2v5a2 2 0 002 2h8a2 2 0 002-2V8a2 2 0 00-2-2h-.5V4.5A3.5 3.5 0 008 1zm2 5V4.5a2 2 0 10-4 0V6h4z"/>
+        <path
+          d="M8 1a3.5 3.5 0 00-3.5 3.5V6H4a2 2 0 00-2 2v5a2 2 0 002 2h8a2 2 0 002-2V8a2 2 0 00-2-2h-.5V4.5A3.5 3.5 0 008 1zm2 5V4.5a2 2 0 10-4 0V6h4z"
+        />
       </svg>
       Your key is stored securely in the macOS Keychain
     </p>
@@ -297,7 +314,9 @@
     border-radius: 8px;
     font-size: 14px;
     font-family: monospace;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
   }
 
   input:focus {
@@ -364,7 +383,9 @@
     font-weight: 500;
     cursor: pointer;
     border: none;
-    transition: background 0.2s, transform 0.1s;
+    transition:
+      background 0.2s,
+      transform 0.1s;
   }
 
   button:disabled {

@@ -68,13 +68,15 @@
       disabled={chatStore.isLoading}
       rows="1"
     ></textarea>
-    <button
-      class="send-button"
-      onclick={handleSend}
-      disabled={!canSend}
-      title="Send message"
-    >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <button class="send-button" onclick={handleSend} disabled={!canSend} title="Send message">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
         <path d="M22 2L11 13"></path>
         <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
       </svg>
@@ -104,7 +106,9 @@
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     padding: 8px 8px 8px 12px;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
   }
 
   .input-container:focus-within {
@@ -193,7 +197,8 @@
   }
 
   @keyframes pulse {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 0.3;
       transform: scale(0.9);
     }

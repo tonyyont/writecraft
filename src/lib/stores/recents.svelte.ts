@@ -62,13 +62,13 @@ function addRecent(path: string): void {
   const now = new Date().toISOString();
 
   // Remove if already exists
-  const filtered = recentFiles.filter(f => f.path !== path);
+  const filtered = recentFiles.filter((f) => f.path !== path);
 
   // Add to front
-  const updated = [
-    { path, name: getFilename(path), openedAt: now },
-    ...filtered
-  ].slice(0, MAX_RECENTS);
+  const updated = [{ path, name: getFilename(path), openedAt: now }, ...filtered].slice(
+    0,
+    MAX_RECENTS
+  );
 
   recentFiles = updated;
   saveRecents(updated);
@@ -76,14 +76,14 @@ function addRecent(path: string): void {
 
 // Remove a file from recents
 function removeRecent(path: string): void {
-  const updated = recentFiles.filter(f => f.path !== path);
+  const updated = recentFiles.filter((f) => f.path !== path);
   recentFiles = updated;
   saveRecents(updated);
 }
 
 // Update a file's path in recents (for rename)
 function updateRecentPath(oldPath: string, newPath: string): void {
-  const updated = recentFiles.map(f => {
+  const updated = recentFiles.map((f) => {
     if (f.path === oldPath) {
       return { ...f, path: newPath, name: getFilename(newPath) };
     }
@@ -101,11 +101,13 @@ function clearRecents(): void {
 
 // Export store
 export const recentsStore = {
-  get files() { return recentFiles; },
+  get files() {
+    return recentFiles;
+  },
 
   addRecent,
   removeRecent,
   updateRecentPath,
   clearRecents,
-  getDirectory
+  getDirectory,
 };

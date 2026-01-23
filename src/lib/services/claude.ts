@@ -1,3 +1,36 @@
+/**
+ * Claude API service for communicating with the AI assistant.
+ *
+ * This service handles:
+ * - Streaming message responses
+ * - Tool use interactions
+ * - Event-based communication with the Rust backend
+ *
+ * The service uses Tauri events for streaming responses, allowing
+ * real-time updates as Claude generates text or uses tools.
+ *
+ * @example
+ * ```typescript
+ * import { sendMessageWithTools } from '$lib/services/claude';
+ *
+ * const response = await sendMessageWithTools(
+ *   messages,
+ *   systemPrompt,
+ *   tools,
+ *   {
+ *     onChunk: (chunk) => console.log('Received:', chunk),
+ *     onError: (error) => console.error('Error:', error),
+ *   }
+ * );
+ *
+ * if (response.toolUses.length > 0) {
+ *   // Handle tool execution
+ * }
+ * ```
+ *
+ * @module services/claude
+ */
+
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type { Tool, Message, ToolUseEvent, AssistantResponse } from '$lib/types/tools';
@@ -161,14 +194,16 @@ export async function sendMessageWithTools(
     }
 
     // Use authenticated proxy or direct API based on flag
-    const command = useAuthenticatedProxy ? 'send_message_authenticated' : 'send_message_with_tools';
+    const command = useAuthenticatedProxy
+      ? 'send_message_authenticated'
+      : 'send_message_with_tools';
 
     // Invoke the Rust command
     const response = await invoke<AssistantResponse>(command, {
       messages,
       systemPrompt: systemPrompt || null,
       tools: tools || null,
-      model: model || null
+      model: model || null,
     });
 
     return response;

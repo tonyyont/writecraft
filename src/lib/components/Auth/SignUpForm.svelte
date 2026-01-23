@@ -26,13 +26,7 @@
     return null;
   });
 
-  let isValid = $derived(
-    email &&
-    password &&
-    confirmPassword &&
-    !passwordError &&
-    !confirmError
-  );
+  let isValid = $derived(email && password && confirmPassword && !passwordError && !confirmError);
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
@@ -42,7 +36,7 @@
     try {
       await authStore.signUp(email, password);
       signUpSuccess = true;
-    } catch (error) {
+    } catch {
       // Error is handled by the store
     }
   }
@@ -51,15 +45,27 @@
 {#if signUpSuccess}
   <div class="success-message">
     <div class="success-icon">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-        <path d="M8 12l2.5 2.5L16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <svg
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+        <path
+          d="M8 12l2.5 2.5L16 9"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
       </svg>
     </div>
     <h2>Check your email</h2>
     <p>
-      We've sent a verification link to <strong>{email}</strong>.
-      Please click the link to verify your account.
+      We've sent a verification link to <strong>{email}</strong>. Please click the link to verify
+      your account.
     </p>
     <button type="button" class="submit-button" onclick={onSwitchToSignIn}>
       Back to Sign In
@@ -105,7 +111,7 @@
         <button
           type="button"
           class="toggle-password"
-          onclick={() => showPassword = !showPassword}
+          onclick={() => (showPassword = !showPassword)}
         >
           {showPassword ? 'Hide' : 'Show'}
         </button>
@@ -130,11 +136,7 @@
       {/if}
     </div>
 
-    <button
-      type="submit"
-      class="submit-button"
-      disabled={authStore.isAuthenticating || !isValid}
-    >
+    <button type="submit" class="submit-button" disabled={authStore.isAuthenticating || !isValid}>
       {#if authStore.isAuthenticating}
         <span class="spinner"></span>
         Creating account...
@@ -145,9 +147,7 @@
 
     <p class="switch-text">
       Already have an account?
-      <button type="button" class="link-button" onclick={onSwitchToSignIn}>
-        Sign in
-      </button>
+      <button type="button" class="link-button" onclick={onSwitchToSignIn}> Sign in </button>
     </p>
   </form>
 {/if}
@@ -239,7 +239,9 @@
     border-radius: 8px;
     font-size: 14px;
     color: #fff;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
   }
 
   input::placeholder {
@@ -301,7 +303,9 @@
     font-weight: 600;
     color: #fff;
     cursor: pointer;
-    transition: background 0.2s, opacity 0.2s;
+    transition:
+      background 0.2s,
+      opacity 0.2s;
     margin-top: 8px;
   }
 

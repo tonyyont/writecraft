@@ -102,7 +102,7 @@
     padding: 8px 16px;
     border-radius: 6px;
     font-size: 13px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   }
 
   @media (prefers-color-scheme: dark) {

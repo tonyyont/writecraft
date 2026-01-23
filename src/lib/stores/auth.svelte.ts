@@ -1,3 +1,33 @@
+/**
+ * Authentication store for managing user sessions, profiles, and subscriptions.
+ *
+ * This store handles:
+ * - User authentication (email/password and OAuth)
+ * - Session management and token refresh
+ * - User profile data
+ * - Subscription and usage tracking
+ *
+ * @example
+ * ```typescript
+ * import { authStore } from '$lib/stores/auth.svelte';
+ *
+ * // Initialize on app startup
+ * await authStore.initialize();
+ *
+ * // Check authentication status
+ * if (authStore.isAuthenticated) {
+ *   console.log('Logged in as:', authStore.user?.email);
+ * }
+ *
+ * // Check usage limits
+ * if (authStore.canSendMessage) {
+ *   // User has remaining messages
+ * }
+ * ```
+ *
+ * @module stores/auth
+ */
+
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 
@@ -60,6 +90,12 @@ export type OAuthProvider = 'google' | 'apple';
 // Auth Store
 // ============================================
 
+/**
+ * Manages user authentication, sessions, and subscription state.
+ *
+ * The store uses Svelte 5 runes for reactive state management and
+ * communicates with the Rust backend via Tauri's invoke system.
+ */
 class AuthStore {
   // State
   session = $state<AuthSession | null>(null);
@@ -130,10 +166,7 @@ class AuthStore {
 
       if (session) {
         // Fetch profile and subscription info
-        await Promise.all([
-          this.fetchProfile(),
-          this.fetchSubscriptionInfo(),
-        ]);
+        await Promise.all([this.fetchProfile(), this.fetchSubscriptionInfo()]);
       }
 
       // Listen for deep links (OAuth callbacks)
@@ -175,10 +208,7 @@ class AuthStore {
       this.session = session;
 
       // Fetch profile and subscription info
-      await Promise.all([
-        this.fetchProfile(),
-        this.fetchSubscriptionInfo(),
-      ]);
+      await Promise.all([this.fetchProfile(), this.fetchSubscriptionInfo()]);
     } catch (e) {
       this.error = e instanceof Error ? e.message : String(e);
       throw e;
@@ -196,10 +226,7 @@ class AuthStore {
       this.session = session;
 
       // Fetch profile and subscription info
-      await Promise.all([
-        this.fetchProfile(),
-        this.fetchSubscriptionInfo(),
-      ]);
+      await Promise.all([this.fetchProfile(), this.fetchSubscriptionInfo()]);
     } catch (e) {
       this.error = e instanceof Error ? e.message : String(e);
       throw e;
@@ -231,10 +258,7 @@ class AuthStore {
       this.session = session;
 
       // Fetch profile and subscription info
-      await Promise.all([
-        this.fetchProfile(),
-        this.fetchSubscriptionInfo(),
-      ]);
+      await Promise.all([this.fetchProfile(), this.fetchSubscriptionInfo()]);
     } catch (e) {
       this.error = e instanceof Error ? e.message : String(e);
       throw e;

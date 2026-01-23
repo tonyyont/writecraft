@@ -80,7 +80,7 @@ function createLineDiff(
     added,
     removed,
     addedLines: added.length,
-    removedLines: removed.length
+    removedLines: removed.length,
   };
 }
 
@@ -117,7 +117,7 @@ export function computeContentDiff(previous: string, current: string): ContentDi
       removedLines: 0,
       addedWords: 0,
       removedWords: 0,
-      diffText: ''
+      diffText: '',
     };
   }
 
@@ -203,7 +203,7 @@ export function computeContentDiff(previous: string, current: string): ContentDi
     removedLines: lineDiff.removedLines,
     addedWords,
     removedWords,
-    diffText
+    diffText,
   };
 }
 
@@ -221,7 +221,7 @@ export function computeOutlineDiff(
       summary: 'No outline',
       addedSections: [],
       removedSections: [],
-      modifiedSections: []
+      modifiedSections: [],
     };
   }
 
@@ -231,7 +231,7 @@ export function computeOutlineDiff(
       summary: 'Outline created with ' + formatCount(current.length, 'section', 'sections'),
       addedSections: current.map((s) => s.title),
       removedSections: [],
-      modifiedSections: []
+      modifiedSections: [],
     };
   }
 
@@ -241,7 +241,7 @@ export function computeOutlineDiff(
       summary: 'Outline removed',
       addedSections: [],
       removedSections: previous.map((s) => s.title),
-      modifiedSections: []
+      modifiedSections: [],
     };
   }
 
@@ -274,7 +274,13 @@ export function computeOutlineDiff(
       const changes: string[] = [];
 
       if (prevSection.title !== section.title) {
-        changes.push('title changed from "' + truncate(prevSection.title, 30) + '" to "' + truncate(section.title, 30) + '"');
+        changes.push(
+          'title changed from "' +
+            truncate(prevSection.title, 30) +
+            '" to "' +
+            truncate(section.title, 30) +
+            '"'
+        );
       }
       if (prevSection.description !== section.description) {
         changes.push('description updated');
@@ -288,7 +294,7 @@ export function computeOutlineDiff(
       if (changes.length > 0) {
         modifiedSections.push({
           title: section.title,
-          changes: changes.join(', ')
+          changes: changes.join(', '),
         });
       }
     }
@@ -333,7 +339,7 @@ export function computeOutlineDiff(
     summary,
     addedSections,
     removedSections,
-    modifiedSections
+    modifiedSections,
   };
 }
 
@@ -362,7 +368,9 @@ export function formatChangesForPrompt(
   // Stage change
   if (stageChange) {
     sections.push('### Stage Change');
-    sections.push('Document stage changed from **' + stageChange.from + '** to **' + stageChange.to + '**.\n');
+    sections.push(
+      'Document stage changed from **' + stageChange.from + '** to **' + stageChange.to + '**.\n'
+    );
   }
 
   // Content changes

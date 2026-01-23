@@ -236,7 +236,7 @@ When ready, present:
 Ask: "This post is ready. How do you feel about it?"
 
 If they want more changes, return to editing.
-If they're done, celebrate the completed piece.`
+If they're done, celebrate the completed piece.`,
 };
 
 /**
@@ -254,7 +254,7 @@ export const stageDescriptions: Record<DocumentStage, string> = {
   outline: 'Structuring the piece into chunks',
   draft: 'Writing section by section',
   edits: 'Full-draft revision passes',
-  polish: 'Final version complete'
+  polish: 'Final version complete',
 };
 
 /**
@@ -427,7 +427,9 @@ ${preview}
     const changesParts: string[] = [];
 
     if (context.userChanges.stageChange) {
-      changesParts.push(`- **Stage Change**: Moved from "${context.userChanges.stageChange.from}" to "${context.userChanges.stageChange.to}"`);
+      changesParts.push(
+        `- **Stage Change**: Moved from "${context.userChanges.stageChange.from}" to "${context.userChanges.stageChange.to}"`
+      );
     }
 
     if (context.userChanges.outlineDiff) {

@@ -45,7 +45,7 @@
       coreArgument: editCoreArgument,
       audience: editAudience,
       tone: editTone,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
     chatStore.updateConcept(updated);
     isEditing = false;
@@ -53,21 +53,40 @@
 </script>
 
 <div class="card" class:editing={isEditing}>
-  <div class="card-header" onclick={toggleExpand} onkeydown={(e) => e.key === 'Enter' && toggleExpand()} role="button" tabindex="0">
+  <div
+    class="card-header"
+    onclick={toggleExpand}
+    onkeydown={(e) => e.key === 'Enter' && toggleExpand()}
+    role="button"
+    tabindex="0"
+  >
     <span class="card-title">
       <svg class="icon" class:rotated={!isExpanded} width="12" height="12" viewBox="0 0 12 12">
-        <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+        <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" fill="none" />
       </svg>
       Concept
     </span>
     {#if isEditing}
-      <button class="close-button" onclick={(e) => { e.stopPropagation(); cancelEditing(); }} title="Close">
+      <button
+        class="close-button"
+        onclick={(e) => {
+          e.stopPropagation();
+          cancelEditing();
+        }}
+        title="Close"
+      >
         <svg width="12" height="12" viewBox="0 0 12 12">
-          <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" stroke-width="1.5" />
         </svg>
       </button>
     {:else}
-      <button class="edit-button" onclick={(e) => { e.stopPropagation(); startEditing(); }}>Edit</button>
+      <button
+        class="edit-button"
+        onclick={(e) => {
+          e.stopPropagation();
+          startEditing();
+        }}>Edit</button
+      >
     {/if}
   </div>
 
@@ -81,15 +100,30 @@
           </div>
           <div class="form-group">
             <label for="coreArgument">Core Argument</label>
-            <textarea id="coreArgument" bind:value={editCoreArgument} placeholder="Main thesis or argument" rows="2"></textarea>
+            <textarea
+              id="coreArgument"
+              bind:value={editCoreArgument}
+              placeholder="Main thesis or argument"
+              rows="2"
+            ></textarea>
           </div>
           <div class="form-group">
             <label for="audience">Audience</label>
-            <input id="audience" type="text" bind:value={editAudience} placeholder="Target audience" />
+            <input
+              id="audience"
+              type="text"
+              bind:value={editAudience}
+              placeholder="Target audience"
+            />
           </div>
           <div class="form-group">
             <label for="tone">Tone</label>
-            <input id="tone" type="text" bind:value={editTone} placeholder="e.g., formal, casual, technical" />
+            <input
+              id="tone"
+              type="text"
+              bind:value={editTone}
+              placeholder="e.g., formal, casual, technical"
+            />
           </div>
         </div>
         <div class="form-actions">

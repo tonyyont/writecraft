@@ -1,87 +1,89 @@
 import type { ToolUseEvent, ToolResult } from '$lib/types/tools';
-import type { OutlinePrompt, DocumentStage, EditHistoryEntry } from '$lib/types/sidecar';
+import type { OutlinePrompt, EditHistoryEntry } from '$lib/types/sidecar';
 import { documentStore } from '$lib/stores/document.svelte';
 import { chatStore } from '$lib/stores/chat.svelte';
+import { countWords } from '$lib/utils/text';
+import { createErrorResponse } from '$lib/utils/errors';
+import {
+  safeValidateToolInput,
+  formatValidationError,
+  type ToolName,
+  type UpdateDocumentInput,
+  type UpdateConceptInput,
+  type UpdateOutlineInput,
+  type UpdateStageInput,
+  type AddEditSuggestionInput,
+} from './schemas';
 
 /**
  * Execute a tool call and return the result
  */
 export async function executeToolCall(toolUse: ToolUseEvent): Promise<ToolResult> {
   try {
-    const input = toolUse.input as unknown;
+    // Special case: read_document has no input to validate
+    if (toolUse.name === 'read_document') {
+      return executeReadDocument(toolUse.id);
+    }
 
-    switch (toolUse.name) {
-      case 'read_document':
-        return executeReadDocument(toolUse.id);
+    // Validate that this is a known tool
+    const knownTools: ToolName[] = [
+      'read_document',
+      'update_document',
+      'update_concept',
+      'update_outline',
+      'update_stage',
+      'add_edit_suggestion',
+    ];
 
+    if (!knownTools.includes(toolUse.name as ToolName)) {
+      return {
+        tool_use_id: toolUse.id,
+        content: createErrorResponse(`Unknown tool: ${toolUse.name}`),
+        is_error: true,
+      };
+    }
+
+    // Validate input using Zod schemas
+    const toolName = toolUse.name as Exclude<ToolName, 'read_document'>;
+    const validationResult = safeValidateToolInput(toolName, toolUse.input);
+
+    if (!validationResult.success) {
+      return {
+        tool_use_id: toolUse.id,
+        content: createErrorResponse(
+          `Invalid input: ${formatValidationError(validationResult.error)}`
+        ),
+        is_error: true,
+      };
+    }
+
+    // Execute the appropriate tool handler with validated input
+    switch (toolName) {
       case 'update_document':
-        return executeUpdateDocument(toolUse.id, input as UpdateDocumentInput);
+        return executeUpdateDocument(toolUse.id, validationResult.data as UpdateDocumentInput);
 
       case 'update_concept':
-        return executeUpdateConcept(toolUse.id, input as UpdateConceptInput);
+        return executeUpdateConcept(toolUse.id, validationResult.data as UpdateConceptInput);
 
       case 'update_outline':
-        return executeUpdateOutline(toolUse.id, input as UpdateOutlineInput);
+        return executeUpdateOutline(toolUse.id, validationResult.data as UpdateOutlineInput);
 
       case 'update_stage':
-        return executeUpdateStage(toolUse.id, input as UpdateStageInput);
+        return executeUpdateStage(toolUse.id, validationResult.data as UpdateStageInput);
 
       case 'add_edit_suggestion':
-        return executeAddEditSuggestion(toolUse.id, input as AddEditSuggestionInput);
-
-      default:
-        return {
-          tool_use_id: toolUse.id,
-          content: JSON.stringify({ error: `Unknown tool: ${toolUse.name}` }),
-          is_error: true
-        };
+        return executeAddEditSuggestion(
+          toolUse.id,
+          validationResult.data as AddEditSuggestionInput
+        );
     }
   } catch (error) {
     return {
       tool_use_id: toolUse.id,
-      content: JSON.stringify({
-        error: error instanceof Error ? error.message : String(error)
-      }),
-      is_error: true
+      content: createErrorResponse(error instanceof Error ? error.message : String(error)),
+      is_error: true,
     };
   }
-}
-
-// ============================================
-// Tool input types
-// ============================================
-
-interface UpdateDocumentInput {
-  operation: 'replace' | 'insert' | 'append';
-  content: string;
-  position?: number;
-}
-
-interface UpdateConceptInput {
-  title: string;
-  coreArgument: string;
-  audience: string;
-  tone: string;
-}
-
-interface UpdateOutlineInput {
-  sections: Array<{
-    id: string;
-    title: string;
-    description: string;
-    estimatedWords?: number;
-  }>;
-}
-
-interface UpdateStageInput {
-  stage: DocumentStage;
-}
-
-interface AddEditSuggestionInput {
-  scope: string;
-  before: string;
-  after: string;
-  rationale?: string;
 }
 
 // ============================================
@@ -91,16 +93,15 @@ interface AddEditSuggestionInput {
 function executeReadDocument(toolUseId: string): ToolResult {
   const content = documentStore.content;
   const stage = documentStore.sidecar?.stage ?? 'concept';
-  const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
 
   return {
     tool_use_id: toolUseId,
     content: JSON.stringify({
       content,
       stage,
-      wordCount,
-      filename: documentStore.filename
-    })
+      wordCount: countWords(content),
+      filename: documentStore.filename,
+    }),
   };
 }
 
@@ -113,41 +114,27 @@ function executeUpdateDocument(toolUseId: string, input: UpdateDocumentInput): T
       newContent = input.content;
       break;
 
-    case 'insert':
-      if (input.position === undefined) {
-        return {
-          tool_use_id: toolUseId,
-          content: JSON.stringify({ error: 'Position required for insert operation' }),
-          is_error: true
-        };
-      }
-      const pos = Math.max(0, Math.min(input.position, currentContent.length));
+    case 'insert': {
+      // Position is validated by Zod schema, but TypeScript doesn't know that
+      const pos = Math.max(0, Math.min(input.position!, currentContent.length));
       newContent = currentContent.slice(0, pos) + input.content + currentContent.slice(pos);
       break;
+    }
 
     case 'append':
       newContent = currentContent + input.content;
       break;
-
-    default:
-      return {
-        tool_use_id: toolUseId,
-        content: JSON.stringify({ error: `Unknown operation: ${input.operation}` }),
-        is_error: true
-      };
   }
 
   documentStore.updateContent(newContent);
-
-  const wordCount = newContent.trim() ? newContent.trim().split(/\s+/).length : 0;
 
   return {
     tool_use_id: toolUseId,
     content: JSON.stringify({
       success: true,
       operation: input.operation,
-      wordCount
-    })
+      wordCount: countWords(newContent),
+    }),
   };
 }
 
@@ -157,7 +144,7 @@ function executeUpdateConcept(toolUseId: string, input: UpdateConceptInput): Too
     coreArgument: input.coreArgument,
     audience: input.audience,
     tone: input.tone,
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   });
 
   return {
@@ -168,9 +155,9 @@ function executeUpdateConcept(toolUseId: string, input: UpdateConceptInput): Too
         title: input.title,
         coreArgument: input.coreArgument,
         audience: input.audience,
-        tone: input.tone
-      }
-    })
+        tone: input.tone,
+      },
+    }),
   };
 }
 
@@ -179,7 +166,7 @@ function executeUpdateOutline(toolUseId: string, input: UpdateOutlineInput): Too
     id: section.id,
     title: section.title,
     description: section.description,
-    estimatedWords: section.estimatedWords ?? null
+    estimatedWords: section.estimatedWords ?? null,
   }));
 
   chatStore.updateOutline(prompts);
@@ -189,22 +176,13 @@ function executeUpdateOutline(toolUseId: string, input: UpdateOutlineInput): Too
     content: JSON.stringify({
       success: true,
       sectionCount: prompts.length,
-      sections: prompts.map((p) => ({ id: p.id, title: p.title }))
-    })
+      sections: prompts.map((p) => ({ id: p.id, title: p.title })),
+    }),
   };
 }
 
 function executeUpdateStage(toolUseId: string, input: UpdateStageInput): ToolResult {
-  const validStages: DocumentStage[] = ['concept', 'outline', 'draft', 'edits', 'polish'];
-
-  if (!validStages.includes(input.stage)) {
-    return {
-      tool_use_id: toolUseId,
-      content: JSON.stringify({ error: `Invalid stage: ${input.stage}` }),
-      is_error: true
-    };
-  }
-
+  // Stage is validated by Zod schema
   const previousStage = documentStore.sidecar?.stage ?? 'concept';
   documentStore.updateStage(input.stage);
 
@@ -213,8 +191,8 @@ function executeUpdateStage(toolUseId: string, input: UpdateStageInput): ToolRes
     content: JSON.stringify({
       success: true,
       previousStage,
-      newStage: input.stage
-    })
+      newStage: input.stage,
+    }),
   };
 }
 
@@ -224,8 +202,8 @@ function executeAddEditSuggestion(toolUseId: string, input: AddEditSuggestionInp
   if (!currentSidecar) {
     return {
       tool_use_id: toolUseId,
-      content: JSON.stringify({ error: 'No document loaded' }),
-      is_error: true
+      content: createErrorResponse('No document loaded'),
+      is_error: true,
     };
   }
 
@@ -236,12 +214,12 @@ function executeAddEditSuggestion(toolUseId: string, input: AddEditSuggestionInp
     after: input.after,
     accepted: false,
     createdAt: new Date().toISOString(),
-    rationale: input.rationale ?? null
+    rationale: input.rationale ?? null,
   };
 
   // Add to editing history
   documentStore.updateSidecar({
-    editingHistory: [...currentSidecar.editingHistory, entry]
+    editingHistory: [...currentSidecar.editingHistory, entry],
   });
 
   return {
@@ -249,7 +227,7 @@ function executeAddEditSuggestion(toolUseId: string, input: AddEditSuggestionInp
     content: JSON.stringify({
       success: true,
       suggestionId: entry.id,
-      scope: entry.scope
-    })
+      scope: entry.scope,
+    }),
   };
 }

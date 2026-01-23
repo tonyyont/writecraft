@@ -93,23 +93,23 @@ export function createDefaultSidecar(): Sidecar {
     stage: 'concept',
     concept: {
       current: null,
-      versions: []
+      versions: [],
     },
     outline: {
       current: null,
-      versions: []
+      versions: [],
     },
     conversation: {
       messages: [],
-      summary: ''
+      summary: '',
     },
     editingHistory: [],
     settings: {
-      model: 'claude-haiku-4-5-20251001'
+      model: 'claude-haiku-4-5-20251001',
     },
     meta: {
       appVersion: '0.1.0',
-      lastOpenedAt: now
-    }
+      lastOpenedAt: now,
+    },
   };
 }

@@ -27,13 +27,7 @@
 </script>
 
 {#if open}
-  <div
-    class="overlay"
-    onclick={onClose}
-    onkeydown={handleKeyDown}
-    role="button"
-    tabindex="0"
-  >
+  <div class="overlay" onclick={onClose} onkeydown={handleKeyDown} role="button" tabindex="0">
     <div
       class="dialog"
       onclick={(e) => e.stopPropagation()}
@@ -46,8 +40,19 @@
       <div class="dialog-header">
         <h2 id="dialog-title">Settings</h2>
         <button class="close-button" onclick={onClose} aria-label="Close">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M18 6L6 18M6 6l12 12"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
           </svg>
         </button>
       </div>
@@ -66,7 +71,9 @@
           </div>
           <div class="user-info">
             <span class="user-name">
-              {authStore.profile?.displayName || authStore.profile?.fullName || authStore.user?.email}
+              {authStore.profile?.displayName ||
+                authStore.profile?.fullName ||
+                authStore.user?.email}
             </span>
             <span class="user-email">{authStore.user?.email}</span>
           </div>
@@ -82,13 +89,13 @@
         <div class="tabs">
           <button
             class="tab {activeTab === 'profile' ? 'active' : ''}"
-            onclick={() => activeTab = 'profile'}
+            onclick={() => (activeTab = 'profile')}
           >
             Profile
           </button>
           <button
             class="tab {activeTab === 'billing' ? 'active' : ''}"
-            onclick={() => activeTab = 'billing'}
+            onclick={() => (activeTab = 'billing')}
           >
             Billing
           </button>
@@ -105,9 +112,7 @@
       </div>
 
       <div class="dialog-footer">
-        <button class="sign-out-button" onclick={handleSignOut}>
-          Sign Out
-        </button>
+        <button class="sign-out-button" onclick={handleSignOut}> Sign Out </button>
       </div>
     </div>
   </div>
@@ -165,7 +170,9 @@
     border-radius: 6px;
     color: #888;
     cursor: pointer;
-    transition: background 0.2s, color 0.2s;
+    transition:
+      background 0.2s,
+      color 0.2s;
   }
 
   .close-button:hover {
@@ -262,7 +269,9 @@
     font-weight: 500;
     color: #888;
     cursor: pointer;
-    transition: color 0.2s, border-color 0.2s;
+    transition:
+      color 0.2s,
+      border-color 0.2s;
     margin-bottom: -1px;
   }
 
@@ -294,7 +303,10 @@
     font-size: 13px;
     color: #888;
     cursor: pointer;
-    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    transition:
+      background 0.2s,
+      color 0.2s,
+      border-color 0.2s;
   }
 
   .sign-out-button:hover {

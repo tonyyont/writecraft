@@ -4,17 +4,23 @@
   import { open, save } from '@tauri-apps/plugin-dialog';
   import { documentStore } from '$lib/stores/document.svelte';
   import { recentsStore } from '$lib/stores/recents.svelte';
-  import { getEditorExtensions, parseMarkdownSegments, editorConfig } from '$lib/editor/tiptap-config';
+  import {
+    getEditorExtensions,
+    parseMarkdownSegments,
+    editorConfig,
+  } from '$lib/editor/tiptap-config';
   import { getMarkdownFromEditor } from '$lib/editor/markdown-types';
 
   // File operations for welcome screen
   async function handleNewFile() {
     const selected = await save({
-      filters: [{
-        name: 'Markdown',
-        extensions: ['md']
-      }],
-      defaultPath: 'untitled.md'
+      filters: [
+        {
+          name: 'Markdown',
+          extensions: ['md'],
+        },
+      ],
+      defaultPath: 'untitled.md',
     });
 
     if (selected) {
@@ -25,10 +31,12 @@
   async function handleOpenFile() {
     const selected = await open({
       multiple: false,
-      filters: [{
-        name: 'Markdown',
-        extensions: ['md']
-      }]
+      filters: [
+        {
+          name: 'Markdown',
+          extensions: ['md'],
+        },
+      ],
     });
 
     if (selected && typeof selected === 'string') {
@@ -78,7 +86,7 @@
     let processedContent = content;
 
     // If we have raw segments (tables), we need special handling
-    if (segments.some(s => s.type === 'raw')) {
+    if (segments.some((s) => s.type === 'raw')) {
       // For now, just use the raw markdown content
       // The Markdown extension will parse what it can
       processedContent = content;
@@ -255,10 +263,7 @@
 
     <!-- Keep editor element always mounted but hidden when not in preview mode -->
     <div class="editor-wrapper" class:hidden={mode !== 'preview'}>
-      <div
-        bind:this={editorElement}
-        class="tiptap-container"
-      ></div>
+      <div bind:this={editorElement} class="tiptap-container"></div>
     </div>
   {:else}
     <div class="welcome">
@@ -267,7 +272,13 @@
 
         <div class="action-buttons">
           <button class="action-btn" onclick={handleNewFile}>
-            <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg
+              class="action-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14 2 14 8 20 8"></polyline>
               <line x1="12" y1="18" x2="12" y2="12"></line>
@@ -276,8 +287,15 @@
             <span>New file</span>
           </button>
           <button class="action-btn" onclick={handleOpenFile}>
-            <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            <svg
+              class="action-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+              ></path>
             </svg>
             <span>Open file</span>
           </button>
@@ -289,9 +307,15 @@
               <span class="recents-label">Recent files</span>
             </div>
             <div class="recents-list">
-              {#each recentsStore.files as file}
+              {#each recentsStore.files as file (file.path)}
                 <button class="recent-item" onclick={() => handleOpenRecent(file.path)}>
-                  <svg class="recent-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg
+                    class="recent-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
                   </svg>
@@ -353,7 +377,7 @@
 
   .mode-toggle:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(0,122,255,0.4);
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.4);
   }
 
   .mode-toggle.active {
@@ -389,7 +413,9 @@
     background: #fff;
     color: #333;
     box-sizing: border-box;
-    transition: background 0.15s ease, box-shadow 0.15s ease;
+    transition:
+      background 0.15s ease,
+      box-shadow 0.15s ease;
   }
 
   .source-editor:focus {
@@ -455,7 +481,7 @@
 
   .action-btn:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(0,122,255,0.4);
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.4);
   }
 
   .action-icon {
@@ -508,7 +534,7 @@
 
   .recent-item:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(0,122,255,0.4);
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.4);
   }
 
   .recent-icon {

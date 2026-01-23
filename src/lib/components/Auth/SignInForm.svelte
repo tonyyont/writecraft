@@ -22,7 +22,7 @@
 
     try {
       await authStore.signIn(email, password);
-    } catch (error) {
+    } catch {
       // Error is handled by the store
     }
   }
@@ -64,23 +64,13 @@
         autocomplete="current-password"
         disabled={authStore.isAuthenticating}
       />
-      <button
-        type="button"
-        class="toggle-password"
-        onclick={() => showPassword = !showPassword}
-      >
+      <button type="button" class="toggle-password" onclick={() => (showPassword = !showPassword)}>
         {showPassword ? 'Hide' : 'Show'}
       </button>
     </div>
   </div>
 
-  <button
-    type="button"
-    class="forgot-link"
-    onclick={onSwitchToForgot}
-  >
-    Forgot password?
-  </button>
+  <button type="button" class="forgot-link" onclick={onSwitchToForgot}> Forgot password? </button>
 
   <button
     type="submit"
@@ -97,9 +87,7 @@
 
   <p class="switch-text">
     Don't have an account?
-    <button type="button" class="link-button" onclick={onSwitchToSignUp}>
-      Sign up
-    </button>
+    <button type="button" class="link-button" onclick={onSwitchToSignUp}> Sign up </button>
   </p>
 </form>
 
@@ -162,7 +150,9 @@
     border-radius: 8px;
     font-size: 14px;
     color: #fff;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
   }
 
   input::placeholder {
@@ -233,7 +223,9 @@
     font-weight: 600;
     color: #fff;
     cursor: pointer;
-    transition: background 0.2s, opacity 0.2s;
+    transition:
+      background 0.2s,
+      opacity 0.2s;
     margin-top: 8px;
   }
 
