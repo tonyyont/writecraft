@@ -10,7 +10,7 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "tauri": "tauri",
-    "tauri:build": "tauri build && xattr -cr src-tauri/target/release/bundle/macos/*.app && codesign --force --deep --sign 'Developer ID Application: Tony Sheng (MN84M3F6WZ)' --entitlements src-tauri/entitlements.plist src-tauri/target/release/bundle/macos/*.app",
+    "tauri:build": "tauri build; rm -rf /tmp/WriteCraft.app && cp -R src-tauri/target/release/bundle/macos/WriteCraft.app /tmp/ && xattr -cr /tmp/WriteCraft.app && codesign --force --deep --sign 'Developer ID Application: Tony Sheng (MN84M3F6WZ)' --entitlements src-tauri/entitlements.plist /tmp/WriteCraft.app && rm -rf src-tauri/target/release/bundle/macos/WriteCraft.app && mv /tmp/WriteCraft.app src-tauri/target/release/bundle/macos/ && echo 'Build complete: src-tauri/target/release/bundle/macos/WriteCraft.app'",
     "lint": "eslint src --ext .ts,.svelte",
     "lint:fix": "eslint src --ext .ts,.svelte --fix",
     "format": "prettier --write 'src/**/*.{ts,svelte,js,json}'",

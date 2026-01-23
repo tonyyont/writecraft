@@ -14,10 +14,13 @@
   let progress = $state<UpdateProgress | null>(null);
   let dialogRef = $state<HTMLDialogElement | null>(null);
 
+  // Only show dialog if we have update info (an update is actually available)
+  const shouldShow = $derived(open && updateInfo !== null);
+
   $effect(() => {
-    if (open && dialogRef) {
+    if (shouldShow && dialogRef) {
       dialogRef.showModal();
-    } else if (!open && dialogRef) {
+    } else if (!shouldShow && dialogRef && dialogRef.open) {
       dialogRef.close();
     }
   });
@@ -64,81 +67,83 @@
   }
 </script>
 
-<dialog
-  bind:this={dialogRef}
-  class="dialog-overlay"
-  onclick={handleDialogClick}
-  oncancel={(e) => {
-    e.preventDefault();
-    handleClose();
-  }}
->
-  <div class="dialog">
-    <div class="dialog-header">
-      <h2 id="update-title">Software Update</h2>
-      {#if !isDownloading}
-        <button class="close-btn" onclick={handleClose} aria-label="Close">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path
-              d="M1 1L13 13M1 13L13 1"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-            />
-          </svg>
-        </button>
-      {/if}
-    </div>
-
-    <div class="dialog-content">
-      {#if error}
-        <div class="status error">
-          <p>{error}</p>
-          <button class="secondary-btn" onclick={handleClose}>Close</button>
-        </div>
-      {:else if isDownloading}
-        <div class="status">
-          <div class="spinner"></div>
-          <p>Downloading update...</p>
-          {#if progress && progress.total > 0}
-            <div class="progress-bar">
-              <div
-                class="progress-fill"
-                style="width: {(progress.downloaded / progress.total) * 100}%"
-              ></div>
-            </div>
-            <p class="progress-text">
-              {formatBytes(progress.downloaded)} / {formatBytes(progress.total)}
-            </p>
-          {/if}
-        </div>
-      {:else if updateInfo}
-        <div class="update-available">
-          <p class="version-info">A new version of WriteCraft is available!</p>
-          <p class="version-numbers">
-            <span class="label">Current:</span>
-            {updateInfo.currentVersion}
-            <span class="arrow">-></span>
-            <span class="label">New:</span> <strong>{updateInfo.version}</strong>
-          </p>
-          {#if updateInfo.body}
-            <div class="release-notes">
-              <p class="label">What's new:</p>
-              <p class="notes">{updateInfo.body}</p>
-            </div>
-          {/if}
-        </div>
-      {/if}
-    </div>
-
-    {#if !isDownloading && updateInfo && !error}
-      <div class="dialog-footer">
-        <button class="secondary-btn" onclick={handleClose}>Later</button>
-        <button class="primary-btn" onclick={installUpdate}>Install Update</button>
+{#if updateInfo}
+  <dialog
+    bind:this={dialogRef}
+    class="dialog-overlay"
+    onclick={handleDialogClick}
+    oncancel={(e) => {
+      e.preventDefault();
+      handleClose();
+    }}
+  >
+    <div class="dialog">
+      <div class="dialog-header">
+        <h2 id="update-title">Software Update</h2>
+        {#if !isDownloading}
+          <button class="close-btn" onclick={handleClose} aria-label="Close">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path
+                d="M1 1L13 13M1 13L13 1"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+        {/if}
       </div>
-    {/if}
-  </div>
-</dialog>
+
+      <div class="dialog-content">
+        {#if error}
+          <div class="status error">
+            <p>{error}</p>
+            <button class="secondary-btn" onclick={handleClose}>Close</button>
+          </div>
+        {:else if isDownloading}
+          <div class="status">
+            <div class="spinner"></div>
+            <p>Downloading update...</p>
+            {#if progress && progress.total > 0}
+              <div class="progress-bar">
+                <div
+                  class="progress-fill"
+                  style="width: {(progress.downloaded / progress.total) * 100}%"
+                ></div>
+              </div>
+              <p class="progress-text">
+                {formatBytes(progress.downloaded)} / {formatBytes(progress.total)}
+              </p>
+            {/if}
+          </div>
+        {:else if updateInfo}
+          <div class="update-available">
+            <p class="version-info">A new version of WriteCraft is available!</p>
+            <p class="version-numbers">
+              <span class="label">Current:</span>
+              {updateInfo.currentVersion}
+              <span class="arrow">-></span>
+              <span class="label">New:</span> <strong>{updateInfo.version}</strong>
+            </p>
+            {#if updateInfo.body}
+              <div class="release-notes">
+                <p class="label">What's new:</p>
+                <p class="notes">{updateInfo.body}</p>
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+
+      {#if !isDownloading && updateInfo && !error}
+        <div class="dialog-footer">
+          <button class="secondary-btn" onclick={handleClose}>Later</button>
+          <button class="primary-btn" onclick={installUpdate}>Install Update</button>
+        </div>
+      {/if}
+    </div>
+  </dialog>
+{/if}
 
 <style>
   .dialog-overlay {
