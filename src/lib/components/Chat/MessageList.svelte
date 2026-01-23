@@ -12,18 +12,27 @@
 
   let listRef: HTMLDivElement | null = $state(null);
 
+  // Track scroll position to implement "stay in place" behavior
+  let userIsAtBottom = $state(true);
+  let hasNewContent = $state(false);
+
   // Track previously rendered word count for streaming messages
   let previousWordCounts = $state<Map<string, number>>(new Map());
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll to bottom only when user is at the bottom (stay-in-place behavior)
   $effect(() => {
     if (messages.length > 0 && listRef) {
-      // Small delay to ensure DOM is updated
-      requestAnimationFrame(() => {
-        if (listRef) {
-          listRef.scrollTop = listRef.scrollHeight;
-        }
-      });
+      if (userIsAtBottom) {
+        // User is at bottom, auto-scroll to keep them there
+        requestAnimationFrame(() => {
+          if (listRef) {
+            listRef.scrollTop = listRef.scrollHeight;
+          }
+        });
+      } else {
+        // User has scrolled up, indicate new content is available
+        hasNewContent = true;
+      }
     }
   });
 
@@ -134,6 +143,26 @@
     }
   });
 
+  // Handle scroll events to track user position
+  function handleScroll() {
+    if (!listRef) return;
+    const threshold = 50; // pixels from bottom to consider "at bottom"
+    const atBottom = listRef.scrollHeight - listRef.scrollTop - listRef.clientHeight < threshold;
+    userIsAtBottom = atBottom;
+    if (atBottom) {
+      hasNewContent = false;
+    }
+  }
+
+  // Scroll to bottom with smooth animation
+  function scrollToBottom() {
+    if (listRef) {
+      listRef.scrollTo({ top: listRef.scrollHeight, behavior: 'smooth' });
+      hasNewContent = false;
+      userIsAtBottom = true;
+    }
+  }
+
   // Filter out hidden messages
   $effect(() => {
     // This effect exists to trigger re-render when messages change
@@ -141,7 +170,7 @@
   });
 </script>
 
-<div class="message-list" bind:this={listRef}>
+<div class="message-list" bind:this={listRef} onscroll={handleScroll}>
   {#if messages.length === 0}
     <div class="empty-state">
       <div class="empty-icon">
@@ -206,6 +235,27 @@
         {/if}
       {/if}
     {/each}
+  {/if}
+
+  {#if hasNewContent && !userIsAtBottom}
+    <button class="scroll-to-bottom" onclick={scrollToBottom}>
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M8 3v10M4 9l4 4 4-4"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      New messages
+    </button>
   {/if}
 </div>
 
@@ -445,6 +495,53 @@
 
     .message.assistant .message-content :global(a) {
       color: #5ac8fa;
+    }
+  }
+
+  /* Scroll to bottom floating button */
+  .scroll-to-bottom {
+    position: sticky;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #333;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition:
+      background 0.15s ease,
+      transform 0.15s ease;
+    z-index: 10;
+  }
+
+  .scroll-to-bottom:hover {
+    background: #444;
+    transform: translateX(-50%) scale(1.02);
+  }
+
+  .scroll-to-bottom:active {
+    transform: translateX(-50%) scale(0.98);
+  }
+
+  .scroll-to-bottom svg {
+    flex-shrink: 0;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .scroll-to-bottom {
+      background: #555;
+    }
+
+    .scroll-to-bottom:hover {
+      background: #666;
     }
   }
 </style>
