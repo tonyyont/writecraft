@@ -4,6 +4,7 @@
   import { open, save } from '@tauri-apps/plugin-dialog';
   import { documentStore } from '$lib/stores/document.svelte';
   import { recentsStore } from '$lib/stores/recents.svelte';
+  import { editorStore } from '$lib/stores/editor.svelte';
   import {
     getEditorExtensions,
     parseMarkdownSegments,
@@ -55,6 +56,24 @@
 
   // Editor mode: 'source' (edit) or 'preview' (rich/rendered)
   let mode = $state<'source' | 'preview'>('source');
+
+  // Focus mode state
+  let focusMode = $state(false);
+
+  // Toggle focus mode
+  export function toggleFocusMode() {
+    focusMode = !focusMode;
+  }
+
+  // Export getter for focus mode state
+  export function getFocusMode() {
+    return focusMode;
+  }
+
+  // Set focus mode externally
+  export function setFocusMode(value: boolean) {
+    focusMode = value;
+  }
 
   // Tiptap editor instance
   let editor: Editor | null = $state(null);
@@ -118,6 +137,9 @@
       },
     });
 
+    // Register the editor instance with the store for menu undo/redo
+    editorStore.registerEditor(editor);
+
     sourceContent = content;
   }
 
@@ -129,13 +151,15 @@
     }
 
     if (editor) {
+      // Unregister from the store before destroying
+      editorStore.unregisterEditor();
       editor.destroy();
       editor = null;
     }
   }
 
   // Switch between source and preview modes
-  function toggleMode() {
+  export function toggleMode() {
     if (mode === 'source') {
       // Switch to preview mode - update editor with source content
       if (editor) {
@@ -222,15 +246,18 @@
   });
 
   onMount(() => {
+    // Register toggleMode with the store so it can be called from menu
+    editorStore.registerToggleMode(toggleMode);
     // Editor will be initialized via $effect when currentPath is set
   });
 
   onDestroy(() => {
+    editorStore.unregisterToggleMode();
     destroyEditor();
   });
 </script>
 
-<div class="editor-container">
+<div class="editor-container" class:focus-mode={focusMode}>
   {#if documentStore.isLoading}
     <div class="loading">Loading...</div>
   {:else if documentStore.currentPath}
@@ -248,6 +275,27 @@
         onclick={() => mode === 'source' && toggleMode()}
       >
         Preview
+      </button>
+      <div class="toolbar-spacer"></div>
+      <button
+        class="focus-toggle"
+        class:active={focusMode}
+        onclick={toggleFocusMode}
+        title="Toggle Focus Mode (Cmd+Shift+F)"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+          <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
+          <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
+          <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+        </svg>
       </button>
     </div>
 
@@ -386,10 +434,56 @@
     border-color: #333;
   }
 
+  .toolbar-spacer {
+    flex: 1;
+  }
+
+  .focus-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid #e0e0e0;
+    background: transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #666;
+    transition: all 0.15s ease;
+  }
+
+  .focus-toggle svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .focus-toggle:hover {
+    background: #f0f0f0;
+    border-color: #ccc;
+  }
+
+  .focus-toggle:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.4);
+  }
+
+  .focus-toggle.active {
+    background: #007aff;
+    color: #fff;
+    border-color: #007aff;
+  }
+
+  .focus-toggle.active:hover {
+    background: #0066d6;
+    border-color: #0066d6;
+  }
+
   .editor-wrapper {
     flex: 1;
     overflow-y: auto;
     padding: 24px 32px;
+    transition: padding 0.3s ease;
   }
 
   .editor-wrapper.hidden {
@@ -399,6 +493,29 @@
   .tiptap-container {
     max-width: 700px;
     margin: 0 auto;
+    transition: max-width 0.3s ease;
+  }
+
+  /* Focus Mode Styles */
+  .editor-container.focus-mode .editor-toolbar {
+    opacity: 0.3;
+    transition: opacity 0.3s ease;
+  }
+
+  .editor-container.focus-mode .editor-toolbar:hover {
+    opacity: 1;
+  }
+
+  .editor-container.focus-mode .editor-wrapper {
+    padding: 48px 64px;
+  }
+
+  .editor-container.focus-mode .tiptap-container {
+    max-width: 800px;
+  }
+
+  .editor-container.focus-mode .source-editor {
+    padding: 48px 64px;
   }
 
   .source-editor {
@@ -415,7 +532,8 @@
     box-sizing: border-box;
     transition:
       background 0.15s ease,
-      box-shadow 0.15s ease;
+      box-shadow 0.15s ease,
+      padding 0.3s ease;
   }
 
   .source-editor:focus {
@@ -727,6 +845,27 @@
       background: #0066cc;
       border-color: #0066cc;
       color: #fff;
+    }
+
+    .focus-toggle {
+      border-color: #333;
+      color: #ccc;
+    }
+
+    .focus-toggle:hover {
+      background: #333;
+      border-color: #444;
+    }
+
+    .focus-toggle.active {
+      background: #0066cc;
+      border-color: #0066cc;
+      color: #fff;
+    }
+
+    .focus-toggle.active:hover {
+      background: #0055b3;
+      border-color: #0055b3;
     }
 
     .source-editor:focus {

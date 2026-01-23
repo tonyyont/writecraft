@@ -34,6 +34,12 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
+    // Cmd+Enter always sends (explicit send shortcut)
+    if (e.key === 'Enter' && e.metaKey) {
+      e.preventDefault();
+      handleSend();
+      return;
+    }
     // Enter sends, Shift+Enter adds newline
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -68,7 +74,12 @@
       disabled={chatStore.isLoading}
       rows="1"
     ></textarea>
-    <button class="send-button" onclick={handleSend} disabled={!canSend} title="Send message">
+    <button
+      class="send-button"
+      onclick={handleSend}
+      disabled={!canSend}
+      title="Send message (Cmd+Enter)"
+    >
       <svg
         width="18"
         height="18"

@@ -642,11 +642,11 @@ pub async fn send_message_authenticated(
     // Get access token from auth session (auto-refreshes if expired)
     let access_token = match super::auth::get_access_token().await {
         Ok(token) => {
-            eprintln!("[DEBUG] Got access token: {}...", &token[..20.min(token.len())]);
+            tracing::debug!(token_prefix = %&token[..20.min(token.len())], "Got access token");
             token
         }
         Err(e) => {
-            eprintln!("[DEBUG] Failed to get access token: {:?}", e);
+            tracing::debug!(error = ?e, "Failed to get access token");
             return Err(ClaudeError::Api(format!("Auth error: {}", e)));
         }
     };
@@ -669,8 +669,8 @@ pub async fn send_message_authenticated(
         tools,
     };
 
-    eprintln!("[DEBUG] Calling Supabase proxy at {}/functions/v1/claude-proxy", supabase_url);
-    eprintln!("[DEBUG] Using apikey: {}...", &anon_key[..20.min(anon_key.len())]);
+    tracing::debug!(url = %format!("{}/functions/v1/claude-proxy", supabase_url), "Calling Supabase proxy");
+    tracing::debug!(apikey_prefix = %&anon_key[..20.min(anon_key.len())], "Using apikey");
 
     let response = client
         .post(format!("{}/functions/v1/claude-proxy", supabase_url))
@@ -698,7 +698,7 @@ pub async fn send_message_authenticated(
             error_body
         };
 
-        eprintln!("[DEBUG] Supabase proxy error {}: {}", status, error_msg);
+        tracing::debug!(status = %status, error = %error_msg, "Supabase proxy error");
         return match status.as_u16() {
             401 => Err(ClaudeError::Api("Authentication required. Please sign in.".to_string())),
             403 => Err(ClaudeError::Api(error_msg)),

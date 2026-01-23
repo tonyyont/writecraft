@@ -114,6 +114,9 @@ Claude can interact with your document through these tools:
 - Debounced auto-save (500ms)
 - External change detection
 - Recent files quick access
+- Focus mode for distraction-free writing
+- Export to PDF and Word formats
+- Undo/redo support
 
 ### Chat Interface
 
@@ -164,6 +167,9 @@ npm run dev          # Start Vite dev server (frontend only)
 npm run build        # Build frontend for production
 npm run preview      # Preview production build
 npm run check        # Type-check with svelte-check
+npm run test         # Run tests in watch mode
+npm run test:run     # Run tests once (CI mode)
+npm run test:coverage # Run tests with coverage report
 npm run tauri dev    # Full Tauri development mode
 npm run tauri build  # Build production app bundle
 ```
@@ -259,6 +265,12 @@ interface Sidecar {
 | Cmd+O | Open document |
 | Cmd+S | Save document |
 | Cmd+Shift+S | Save as |
+| Cmd+Z | Undo |
+| Cmd+Shift+Z | Redo |
+| Cmd+/ | Toggle source/preview mode |
+| Cmd+Shift+F | Toggle focus mode |
+| Cmd+Shift+E | Export as PDF |
+| Cmd+Enter | Send message (in chat) |
 | Cmd+, | Settings |
 
 ## Recommended IDE Setup
@@ -275,6 +287,23 @@ interface Sidecar {
 - Claude API calls proxied through authenticated Edge Functions
 - Stripe handles all payment processing (PCI compliant)
 - No sensitive data in URLs or logs
+- Sentry error tracking for production monitoring
+- Structured logging with tracing (no sensitive data logged)
+
+## Configuration
+
+### Environment Variables
+
+To enable error tracking and analytics in production, set the following:
+
+**Frontend** (`src/routes/+layout.svelte` and `src/lib/services/analytics.ts`):
+- Replace `YOUR_SENTRY_DSN` with your Sentry project DSN
+- Replace `YOUR_POSTHOG_KEY` with your PostHog project API key
+
+**Backend** (`src-tauri/src/lib.rs`):
+- Replace `YOUR_SENTRY_DSN` with your Sentry project DSN for Rust
+
+These integrations are only active in production builds (`import.meta.env.PROD`).
 
 ## License
 
@@ -284,6 +313,15 @@ MIT
 
 - [x] User accounts and authentication
 - [x] Subscription billing with Stripe
+- [x] Sentry error tracking
+- [x] PostHog analytics
+- [x] Test suite (Vitest)
+- [x] GitHub Actions CI
+- [x] Export to PDF/Word
+- [x] Focus mode
+- [x] Theme/appearance settings (light/dark/system)
+- [x] Keyboard shortcuts
+- [x] Structured logging (Rust tracing)
 - [ ] Multi-document support
 - [ ] Advanced edit history UI
 - [ ] Conflict resolution interface
