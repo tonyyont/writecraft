@@ -10,6 +10,7 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "tauri": "tauri",
+    "tauri:build": "tauri build && xattr -cr src-tauri/target/release/bundle/macos/*.app && codesign --force --deep --sign 'Developer ID Application: Tony Sheng (MN84M3F6WZ)' --entitlements src-tauri/entitlements.plist src-tauri/target/release/bundle/macos/*.app",
     "lint": "eslint src --ext .ts,.svelte",
     "lint:fix": "eslint src --ext .ts,.svelte --fix",
     "format": "prettier --write 'src/**/*.{ts,svelte,js,json}'",

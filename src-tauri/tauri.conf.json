@@ -48,7 +48,7 @@
     ],
     "macOS": {
       "entitlements": "./entitlements.plist",
-      "signingIdentity": "Developer ID Application: Tony Sheng (MN84M3F6WZ)",
+      "signingIdentity": "-",
       "infoPlist": "./Info.plist"
     }
   }

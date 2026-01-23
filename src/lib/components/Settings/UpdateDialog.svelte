@@ -1,21 +1,15 @@
 <script lang="ts">
-  import {
-    checkForUpdates,
-    downloadAndInstall,
-    type UpdateInfo,
-    type UpdateProgress,
-  } from '$lib/services/updater';
+  import { downloadAndInstall, type UpdateInfo, type UpdateProgress } from '$lib/services/updater';
 
   interface Props {
     open: boolean;
     onClose: () => void;
+    updateInfo: UpdateInfo | null;
   }
 
-  let { open, onClose }: Props = $props();
+  let { open, onClose, updateInfo }: Props = $props();
 
-  let isChecking = $state(false);
   let isDownloading = $state(false);
-  let updateInfo = $state<UpdateInfo | null>(null);
   let error = $state<string | null>(null);
   let progress = $state<UpdateProgress | null>(null);
   let dialogRef = $state<HTMLDialogElement | null>(null);
@@ -23,25 +17,10 @@
   $effect(() => {
     if (open && dialogRef) {
       dialogRef.showModal();
-      checkUpdate();
     } else if (!open && dialogRef) {
       dialogRef.close();
     }
   });
-
-  async function checkUpdate() {
-    isChecking = true;
-    error = null;
-    updateInfo = null;
-
-    try {
-      updateInfo = await checkForUpdates();
-    } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to check for updates';
-    } finally {
-      isChecking = false;
-    }
-  }
 
   async function installUpdate() {
     if (!updateInfo) return;
@@ -63,7 +42,6 @@
 
   function handleClose() {
     if (!isDownloading) {
-      updateInfo = null;
       error = null;
       progress = null;
       onClose();
@@ -113,15 +91,10 @@
     </div>
 
     <div class="dialog-content">
-      {#if isChecking}
-        <div class="status">
-          <div class="spinner"></div>
-          <p>Checking for updates...</p>
-        </div>
-      {:else if error}
+      {#if error}
         <div class="status error">
           <p>{error}</p>
-          <button class="secondary-btn" onclick={checkUpdate}>Try Again</button>
+          <button class="secondary-btn" onclick={handleClose}>Close</button>
         </div>
       {:else if isDownloading}
         <div class="status">
@@ -155,31 +128,13 @@
             </div>
           {/if}
         </div>
-      {:else}
-        <div class="status up-to-date">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="2" />
-            <path
-              d="M16 24L22 30L32 18"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          <p>WriteCraft is up to date!</p>
-        </div>
       {/if}
     </div>
 
-    {#if !isChecking && !isDownloading}
+    {#if !isDownloading && updateInfo && !error}
       <div class="dialog-footer">
-        {#if updateInfo}
-          <button class="secondary-btn" onclick={handleClose}>Later</button>
-          <button class="primary-btn" onclick={installUpdate}>Install Update</button>
-        {:else if !error}
-          <button class="secondary-btn" onclick={handleClose}>Close</button>
-        {/if}
+        <button class="secondary-btn" onclick={handleClose}>Later</button>
+        <button class="primary-btn" onclick={installUpdate}>Install Update</button>
       </div>
     {/if}
   </div>
@@ -200,6 +155,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    z-index: 1000;
   }
 
   .dialog-overlay::backdrop {
@@ -211,7 +167,7 @@
     background: var(--bg-primary, #1a1a1a);
     border: 1px solid var(--border-secondary, #333);
     border-radius: 12px;
-    width: 400px;
+    width: 350px;
     max-width: 90vw;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
   }
@@ -249,8 +205,7 @@
   }
 
   .dialog-content {
-    padding: 24px 20px;
-    min-height: 120px;
+    padding: 20px;
   }
 
   .status {
@@ -268,15 +223,6 @@
 
   .status.error p {
     color: var(--error, #ff6b6b);
-  }
-
-  .status.up-to-date {
-    color: var(--success, #4ade80);
-  }
-
-  .status.up-to-date p {
-    color: var(--text-primary, #fff);
-    font-weight: 500;
   }
 
   .spinner {

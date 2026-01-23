@@ -67,6 +67,8 @@ jobs:
         run: npm ci
 
       - name: Build Tauri app
-        run: npm run tauri build
+        run: |
+          npm run tauri build
+          xattr -cr src-tauri/target/release/bundle/macos/*.app 2>/dev/null || true
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}

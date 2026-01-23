@@ -6,8 +6,10 @@
   import { authStore } from '$lib/stores/auth.svelte';
   import { editorStore } from '$lib/stores/editor.svelte';
   import { exportToPDF, exportToWord } from '$lib/services/export';
+  import type { UpdateInfo } from '$lib/services/updater';
   import SettingsDialog from './Settings/SettingsDialog.svelte';
   import UpdateDialog from './Settings/UpdateDialog.svelte';
+  import UpdateToast from './Settings/UpdateToast.svelte';
 
   // Props
   interface Props {
@@ -19,6 +21,8 @@
   // State for dialogs
   let settingsDialogOpen = $state(false);
   let updateDialogOpen = $state(false);
+  let updateToastOpen = $state(false);
+  let pendingUpdateInfo = $state<UpdateInfo | null>(null);
 
   // State for inline rename
   let isRenaming = $state(false);
@@ -129,6 +133,16 @@
     }
   }
 
+  function handleUpdateAvailable(info: UpdateInfo) {
+    pendingUpdateInfo = info;
+    updateDialogOpen = true;
+  }
+
+  function handleUpdateDialogClose() {
+    updateDialogOpen = false;
+    pendingUpdateInfo = null;
+  }
+
   onMount(() => {
     // Listen for menu events from Tauri
     const unlisten = listen<string>('menu-event', (event) => {
@@ -154,7 +168,7 @@
           settingsDialogOpen = true;
           break;
         case 'check_updates':
-          updateDialogOpen = true;
+          updateToastOpen = true;
           break;
         case 'focus_mode':
           toggleFocusMode?.();
@@ -230,7 +244,16 @@
 </div>
 
 <SettingsDialog open={settingsDialogOpen} onClose={() => (settingsDialogOpen = false)} />
-<UpdateDialog open={updateDialogOpen} onClose={() => (updateDialogOpen = false)} />
+<UpdateToast
+  open={updateToastOpen}
+  onClose={() => (updateToastOpen = false)}
+  onUpdateAvailable={handleUpdateAvailable}
+/>
+<UpdateDialog
+  open={updateDialogOpen}
+  onClose={handleUpdateDialogClose}
+  updateInfo={pendingUpdateInfo}
+/>
 
 <style>
   .app-bar {

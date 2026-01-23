@@ -2,6 +2,8 @@ use keyring::Entry;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fs;
+use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::AppHandle;
 use tauri_plugin_opener::OpenerExt;
@@ -170,6 +172,43 @@ fn auth_fallback_key() -> String {
     format!("{}:{}", SERVICE_NAME, AUTH_ACCOUNT_NAME)
 }
 
+// ============================================
+// File-based persistent fallback
+// ============================================
+
+fn get_session_file_path() -> Option<PathBuf> {
+    // Save to ~/Library/Application Support/com.writecraft.app/session.json
+    dirs::data_dir().map(|p| p.join("com.writecraft.app").join("session.json"))
+}
+
+fn save_session_to_file(session: &AuthSession) -> Result<(), AuthError> {
+    if let Some(path) = get_session_file_path() {
+        // Create directory if it doesn't exist
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).map_err(|e| AuthError::Storage(e.to_string()))?;
+        }
+        let json = serde_json::to_string(session).map_err(|e| AuthError::Storage(e.to_string()))?;
+        fs::write(&path, &json).map_err(|e| AuthError::Storage(e.to_string()))?;
+        tracing::debug!("Session saved to file: {:?}", path);
+    }
+    Ok(())
+}
+
+fn load_session_from_file() -> Option<AuthSession> {
+    let path = get_session_file_path()?;
+    let json = fs::read_to_string(&path).ok()?;
+    let session = serde_json::from_str(&json).ok()?;
+    tracing::debug!("Session loaded from file: {:?}", path);
+    Some(session)
+}
+
+fn clear_session_file() {
+    if let Some(path) = get_session_file_path() {
+        let _ = fs::remove_file(&path);
+        tracing::debug!("Session file cleared: {:?}", path);
+    }
+}
+
 fn save_session(session: &AuthSession) -> Result<(), AuthError> {
     let json = serde_json::to_string(session).map_err(|e| AuthError::Storage(e.to_string()))?;
 
@@ -177,18 +216,22 @@ fn save_session(session: &AuthSession) -> Result<(), AuthError> {
     if let Ok(entry) = get_auth_entry() {
         match entry.set_password(&json) {
             Ok(()) => {
-                // Also store in fallback for this session
-                let mut storage = AUTH_FALLBACK_STORAGE.lock().unwrap();
-                storage.insert(auth_fallback_key(), json);
+                tracing::info!("Session saved to keychain");
+                // Also save to file as backup
+                let _ = save_session_to_file(session);
                 return Ok(());
             }
             Err(e) => {
-                tracing::warn!(error = %e, "Keychain set error, using fallback");
+                tracing::warn!(error = %e, "Keychain save failed, using file fallback");
             }
         }
     }
 
-    // Fall back to in-memory storage
+    // Fall back to file storage (persists across restarts)
+    save_session_to_file(session)?;
+    tracing::info!("Session saved to file fallback");
+
+    // Also keep in memory for this session
     let mut storage = AUTH_FALLBACK_STORAGE.lock().unwrap();
     storage.insert(auth_fallback_key(), json);
     Ok(())
@@ -200,21 +243,36 @@ fn load_session() -> Option<AuthSession> {
         match entry.get_password() {
             Ok(json) => {
                 if let Ok(session) = serde_json::from_str::<AuthSession>(&json) {
+                    tracing::info!("Session loaded from keychain");
                     return Some(session);
                 }
             }
-            Err(keyring::Error::NoEntry) => {}
+            Err(keyring::Error::NoEntry) => {
+                tracing::debug!("No session in keychain");
+            }
             Err(e) => {
-                tracing::warn!(error = %e, "Keychain get error");
+                tracing::warn!(error = %e, "Keychain read failed");
             }
         }
     }
 
-    // Fall back to in-memory storage
+    // Try file fallback (persists across restarts)
+    if let Some(session) = load_session_from_file() {
+        tracing::info!("Session loaded from file fallback");
+        return Some(session);
+    }
+
+    // Finally try in-memory (only works within same session)
     let storage = AUTH_FALLBACK_STORAGE.lock().unwrap();
-    storage
-        .get(&auth_fallback_key())
-        .and_then(|json| serde_json::from_str(json).ok())
+    if let Some(json) = storage.get(&auth_fallback_key()) {
+        if let Ok(session) = serde_json::from_str(json) {
+            tracing::info!("Session loaded from memory fallback");
+            return Some(session);
+        }
+    }
+
+    tracing::debug!("No session found anywhere");
+    None
 }
 
 fn clear_session() {
@@ -223,9 +281,14 @@ fn clear_session() {
         let _ = entry.delete_credential();
     }
 
-    // Also remove from fallback storage
+    // Clear file fallback
+    clear_session_file();
+
+    // Clear memory fallback
     let mut storage = AUTH_FALLBACK_STORAGE.lock().unwrap();
     storage.remove(&auth_fallback_key());
+
+    tracing::info!("Session cleared from all storage locations");
 }
 
 // ============================================
