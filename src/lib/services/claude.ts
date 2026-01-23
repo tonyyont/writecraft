@@ -1,6 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type { Tool, Message, ToolUseEvent, AssistantResponse } from '$lib/types/tools';
+import * as Sentry from '@sentry/svelte';
+import { analytics } from '$lib/services/analytics';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -74,6 +76,9 @@ export async function sendMessage(
     });
 
     return response;
+  } catch (e) {
+    Sentry.captureException(e);
+    throw e;
   } finally {
     // Clean up listeners
     if (chunkUnlisten) {
@@ -92,7 +97,8 @@ export async function hasApiKey(): Promise<boolean> {
   try {
     const key = await invoke<string | null>('get_api_key');
     return key !== null;
-  } catch {
+  } catch (e) {
+    Sentry.captureException(e);
     return false;
   }
 }
@@ -105,9 +111,17 @@ export async function testApiKey(): Promise<boolean> {
     const key = await invoke<string | null>('get_api_key');
     if (!key) return false;
     return await invoke<boolean>('test_api_key', { key });
-  } catch {
+  } catch (e) {
+    Sentry.captureException(e);
     return false;
   }
+}
+
+/**
+ * Analytics context for message tracking
+ */
+export interface MessageAnalyticsContext {
+  stage?: string;
 }
 
 /**
@@ -119,6 +133,7 @@ export async function testApiKey(): Promise<boolean> {
  * @param callbacks - Optional callbacks for streaming events
  * @param model - Optional model override
  * @param useAuthenticatedProxy - Whether to use the authenticated Supabase proxy
+ * @param analyticsContext - Optional analytics context for tracking
  * @returns Promise resolving to AssistantResponse
  */
 export async function sendMessageWithTools(
@@ -127,7 +142,8 @@ export async function sendMessageWithTools(
   tools?: Tool[],
   callbacks?: ToolMessageCallbacks,
   model?: string,
-  useAuthenticatedProxy: boolean = true
+  useAuthenticatedProxy: boolean = true,
+  analyticsContext?: MessageAnalyticsContext
 ): Promise<AssistantResponse> {
   let chunkUnlisten: UnlistenFn | null = null;
   let errorUnlisten: UnlistenFn | null = null;
@@ -171,7 +187,17 @@ export async function sendMessageWithTools(
       model: model || null
     });
 
+    // Track message sent event
+    analytics.track('message_sent', {
+      stage: analyticsContext?.stage,
+      model: model || 'default',
+      stopReason: response.stopReason
+    });
+
     return response;
+  } catch (e) {
+    Sentry.captureException(e);
+    throw e;
   } finally {
     // Clean up listeners
     if (chunkUnlisten) chunkUnlisten();

@@ -2,6 +2,7 @@
   import { authStore } from '$lib/stores/auth.svelte';
   import ProfileSection from './ProfileSection.svelte';
   import BillingSection from './BillingSection.svelte';
+  import AppearanceSection from './AppearanceSection.svelte';
   import UsageBar from './UsageBar.svelte';
 
   interface Props {
@@ -11,7 +12,7 @@
 
   let { open, onClose }: Props = $props();
 
-  type Tab = 'profile' | 'billing';
+  type Tab = 'profile' | 'billing' | 'appearance';
   let activeTab = $state<Tab>('profile');
 
   function handleKeyDown(e: KeyboardEvent) {
@@ -92,6 +93,12 @@
           >
             Billing
           </button>
+          <button
+            class="tab {activeTab === 'appearance' ? 'active' : ''}"
+            onclick={() => activeTab = 'appearance'}
+          >
+            Appearance
+          </button>
         </div>
 
         <!-- Tab content -->
@@ -100,6 +107,8 @@
             <ProfileSection />
           {:else if activeTab === 'billing'}
             <BillingSection />
+          {:else if activeTab === 'appearance'}
+            <AppearanceSection />
           {/if}
         </div>
       </div>

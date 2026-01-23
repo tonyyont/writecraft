@@ -4,9 +4,24 @@ mod models;
 use commands::*;
 use tauri::menu::{AboutMetadata, MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 use tauri::{Emitter, Manager};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Initialize Sentry for error tracking in production
+    let _guard = sentry::init(("https://ec6186285bfdb62cefaa94efc2bfb76a@o4510757633523712.ingest.us.sentry.io/4510757643288576", sentry::ClientOptions {
+        release: sentry::release_name!(),
+        environment: Some("production".into()),
+        traces_sample_rate: 0.1,
+        ..Default::default()
+    }));
+
+    // Initialize tracing for structured logging
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer())
+        .with(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
@@ -63,6 +78,36 @@ pub fn run() {
                 .id("rename")
                 .build(app)?;
 
+            let export_pdf_item = MenuItemBuilder::new("Export as PDF...")
+                .id("export_pdf")
+                .accelerator("Cmd+Shift+E")
+                .build(app)?;
+
+            let export_word_item = MenuItemBuilder::new("Export as Word...")
+                .id("export_word")
+                .build(app)?;
+
+            let toggle_preview_item = MenuItemBuilder::new("Toggle Source/Preview")
+                .id("toggle_preview")
+                .accelerator("Cmd+/")
+                .build(app)?;
+
+            let focus_mode_item = MenuItemBuilder::new("Focus Mode")
+                .id("focus_mode")
+                .accelerator("Cmd+Shift+F")
+                .build(app)?;
+
+            // Edit menu items with custom IDs so we can handle them in the frontend
+            let undo_item = MenuItemBuilder::new("Undo")
+                .id("undo")
+                .accelerator("Cmd+Z")
+                .build(app)?;
+
+            let redo_item = MenuItemBuilder::new("Redo")
+                .id("redo")
+                .accelerator("Cmd+Shift+Z")
+                .build(app)?;
+
             // App menu (WriteCraft menu)
             let app_submenu = SubmenuBuilder::new(app, "WriteCraft")
                 .about(Some(AboutMetadata {
@@ -91,13 +136,16 @@ pub fn run() {
                 .item(&save_as_item)
                 .item(&rename_item)
                 .separator()
+                .item(&export_pdf_item)
+                .item(&export_word_item)
+                .separator()
                 .close_window()
                 .build()?;
 
             // Edit menu
             let edit_submenu = SubmenuBuilder::new(app, "Edit")
-                .undo()
-                .redo()
+                .item(&undo_item)
+                .item(&redo_item)
                 .separator()
                 .cut()
                 .copy()
@@ -107,6 +155,9 @@ pub fn run() {
 
             // View menu
             let view_submenu = SubmenuBuilder::new(app, "View")
+                .item(&toggle_preview_item)
+                .item(&focus_mode_item)
+                .separator()
                 .fullscreen()
                 .build()?;
 

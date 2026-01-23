@@ -183,7 +183,7 @@ fn save_session(session: &AuthSession) -> Result<(), AuthError> {
                 return Ok(());
             }
             Err(e) => {
-                eprintln!("Keychain set error: {}, using fallback", e);
+                tracing::warn!(error = %e, "Keychain set error, using fallback");
             }
         }
     }
@@ -205,7 +205,7 @@ fn load_session() -> Option<AuthSession> {
             }
             Err(keyring::Error::NoEntry) => {}
             Err(e) => {
-                eprintln!("Keychain get error: {}", e);
+                tracing::warn!(error = %e, "Keychain get error");
             }
         }
     }

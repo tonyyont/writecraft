@@ -7,8 +7,24 @@
   import { AuthGuard } from '$lib/components/Auth';
   import { documentStore } from '$lib/stores/document.svelte';
   import { authStore } from '$lib/stores/auth.svelte';
+  import { preferencesStore } from '$lib/stores/preferences.svelte';
+
+  // Editor component reference for focus mode
+  let editorComponent: Editor | undefined = $state();
+
+  // Focus mode state (synced with editor)
+  let focusMode = $state(false);
+
+  // Toggle focus mode from menu or keyboard shortcut
+  export function toggleFocusMode() {
+    focusMode = !focusMode;
+    editorComponent?.setFocusMode(focusMode);
+  }
 
   onMount(() => {
+    // Initialize preferences (theme) on startup
+    preferencesStore.initialize();
+
     // Initialize auth on startup
     authStore.initialize();
 
@@ -37,12 +53,20 @@
 
 <AuthGuard>
   {#snippet children()}
-    <div class="app-container">
-      <MenuBar />
+    <div class="app-container" class:focus-mode={focusMode}>
+      <MenuBar {toggleFocusMode} />
       <div class="main-content">
-        <MetadataPanel />
-        <Editor />
-        <ChatPanel />
+        {#if !focusMode}
+          <div class="panel-container panel-left">
+            <MetadataPanel />
+          </div>
+        {/if}
+        <Editor bind:this={editorComponent} />
+        {#if !focusMode}
+          <div class="panel-container panel-right">
+            <ChatPanel />
+          </div>
+        {/if}
       </div>
     </div>
   {/snippet}
@@ -122,6 +146,48 @@
     overflow: hidden;
   }
 
+  /* Panel containers for smooth transitions */
+  .panel-container {
+    display: flex;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .panel-left {
+    animation: slideInLeft 0.3s ease;
+  }
+
+  .panel-right {
+    animation: slideInRight 0.3s ease;
+  }
+
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Focus mode app-level styles */
+  .app-container.focus-mode .main-content {
+    justify-content: center;
+  }
+
   /* Global Scrollbar Styling */
   :global(::-webkit-scrollbar) {
     width: 6px;
@@ -141,8 +207,9 @@
     background: rgba(0,0,0,0.35);
   }
 
+  /* Dark mode via system preference (when no manual override) */
   @media (prefers-color-scheme: dark) {
-    :global(body) {
+    :global(html:not(.light) body) {
       background: #1e1e1e;
       color: #e0e0e0;
 
@@ -161,12 +228,40 @@
       --color-success: #4ade80;
     }
 
-    :global(::-webkit-scrollbar-thumb) {
+    :global(html:not(.light) ::-webkit-scrollbar-thumb) {
       background: rgba(255,255,255,0.2);
     }
 
-    :global(::-webkit-scrollbar-thumb:hover) {
+    :global(html:not(.light) ::-webkit-scrollbar-thumb:hover) {
       background: rgba(255,255,255,0.35);
     }
+  }
+
+  /* Dark mode via manual class override */
+  :global(html.dark body) {
+    background: #1e1e1e;
+    color: #e0e0e0;
+
+    /* Colors (Dark Mode) */
+    --color-bg: #1e1e1e;
+    --color-bg-elevated: #252525;
+    --color-bg-raised: #2a2a2a;
+    --color-text: #e0e0e0;
+    --color-text-secondary: #a0a0a0;
+    --color-text-muted: #888888;
+    --color-border: #333333;
+    --color-border-subtle: #3a3a3a;
+    --color-primary: #5ac8fa;
+    --color-primary-hover: #4ab8ea;
+    --color-error: #f87171;
+    --color-success: #4ade80;
+  }
+
+  :global(html.dark ::-webkit-scrollbar-thumb) {
+    background: rgba(255,255,255,0.2);
+  }
+
+  :global(html.dark ::-webkit-scrollbar-thumb:hover) {
+    background: rgba(255,255,255,0.35);
   }
 </style>

@@ -1,5 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import * as Sentry from '@sentry/svelte';
+import { analytics } from '$lib/services/analytics';
 
 // ============================================
 // Types
@@ -140,6 +142,7 @@ class AuthStore {
       await this.setupDeepLinkListener();
     } catch (e) {
       console.error('Failed to initialize auth:', e);
+      Sentry.captureException(e);
       this.error = e instanceof Error ? e.message : String(e);
     } finally {
       this.isLoading = false;
@@ -179,7 +182,12 @@ class AuthStore {
         this.fetchProfile(),
         this.fetchSubscriptionInfo(),
       ]);
+
+      // Track sign up event
+      analytics.identify(session.user.id, { email: session.user.email });
+      analytics.track('user_signed_up', { method: 'email' });
     } catch (e) {
+      Sentry.captureException(e);
       this.error = e instanceof Error ? e.message : String(e);
       throw e;
     } finally {
@@ -200,7 +208,12 @@ class AuthStore {
         this.fetchProfile(),
         this.fetchSubscriptionInfo(),
       ]);
+
+      // Track sign in event
+      analytics.identify(session.user.id, { email: session.user.email });
+      analytics.track('user_signed_in', { method: 'email' });
     } catch (e) {
+      Sentry.captureException(e);
       this.error = e instanceof Error ? e.message : String(e);
       throw e;
     } finally {
@@ -219,6 +232,7 @@ class AuthStore {
 
       // The callback will be handled by the deep link listener
     } catch (e) {
+      Sentry.captureException(e);
       this.error = e instanceof Error ? e.message : String(e);
       this.isAuthenticating = false;
       throw e;
@@ -235,7 +249,12 @@ class AuthStore {
         this.fetchProfile(),
         this.fetchSubscriptionInfo(),
       ]);
+
+      // Track OAuth sign in event
+      analytics.identify(session.user.id, { email: session.user.email });
+      analytics.track('user_signed_in', { method: 'oauth' });
     } catch (e) {
+      Sentry.captureException(e);
       this.error = e instanceof Error ? e.message : String(e);
       throw e;
     } finally {
@@ -248,7 +267,10 @@ class AuthStore {
       await invoke('sign_out');
     } catch (e) {
       console.error('Sign out error:', e);
+      Sentry.captureException(e);
     } finally {
+      // Reset analytics user
+      analytics.reset();
       this.session = null;
       this.profile = null;
       this.subscriptionInfo = null;
@@ -262,6 +284,7 @@ class AuthStore {
     try {
       await invoke('reset_password', { email });
     } catch (e) {
+      Sentry.captureException(e);
       this.error = e instanceof Error ? e.message : String(e);
       throw e;
     }
@@ -273,6 +296,7 @@ class AuthStore {
       this.session = session;
     } catch (e) {
       // Session expired, clear everything
+      Sentry.captureException(e);
       this.session = null;
       this.profile = null;
       this.subscriptionInfo = null;
@@ -290,6 +314,7 @@ class AuthStore {
       this.profile = profile;
     } catch (e) {
       console.error('Failed to fetch profile:', e);
+      Sentry.captureException(e);
     }
   }
 
@@ -298,6 +323,7 @@ class AuthStore {
       const profile = await invoke<Profile>('update_profile', { updates });
       this.profile = profile;
     } catch (e) {
+      Sentry.captureException(e);
       this.error = e instanceof Error ? e.message : String(e);
       throw e;
     }
@@ -313,6 +339,7 @@ class AuthStore {
       this.subscriptionInfo = info;
     } catch (e) {
       console.error('Failed to fetch subscription info:', e);
+      Sentry.captureException(e);
     }
   }
 
@@ -321,6 +348,7 @@ class AuthStore {
       const url = await invoke<string>('get_checkout_url', { priceId });
       await invoke('open_oauth_url', { url });
     } catch (e) {
+      Sentry.captureException(e);
       this.error = e instanceof Error ? e.message : String(e);
       throw e;
     }
@@ -331,6 +359,7 @@ class AuthStore {
       const url = await invoke<string>('get_billing_portal_url');
       await invoke('open_oauth_url', { url });
     } catch (e) {
+      Sentry.captureException(e);
       this.error = e instanceof Error ? e.message : String(e);
       throw e;
     }

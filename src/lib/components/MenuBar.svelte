@@ -4,8 +4,17 @@
   import { open, save } from '@tauri-apps/plugin-dialog';
   import { documentStore } from '$lib/stores/document.svelte';
   import { authStore } from '$lib/stores/auth.svelte';
+  import { editorStore } from '$lib/stores/editor.svelte';
+  import { exportToPDF, exportToWord } from '$lib/services/export';
   import SettingsDialog from './Settings/SettingsDialog.svelte';
   import UpdateDialog from './Settings/UpdateDialog.svelte';
+
+  // Props
+  interface Props {
+    toggleFocusMode?: () => void;
+  }
+
+  let { toggleFocusMode }: Props = $props();
 
   // State for dialogs
   let settingsDialogOpen = $state(false);
@@ -140,6 +149,28 @@
           break;
         case 'check_updates':
           updateDialogOpen = true;
+          break;
+        case 'focus_mode':
+          toggleFocusMode?.();
+          break;
+        case 'export_pdf':
+          if (documentStore.content && documentStore.filename) {
+            exportToPDF(documentStore.content, documentStore.filename);
+          }
+          break;
+        case 'export_word':
+          if (documentStore.content && documentStore.filename) {
+            exportToWord(documentStore.content, documentStore.filename);
+          }
+          break;
+        case 'undo':
+          editorStore.undo();
+          break;
+        case 'redo':
+          editorStore.redo();
+          break;
+        case 'toggle_preview':
+          editorStore.toggleMode();
           break;
       }
     });

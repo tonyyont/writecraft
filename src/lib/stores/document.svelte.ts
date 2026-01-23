@@ -1,6 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { Sidecar, DocumentStage, OutlinePrompt } from '$lib/types/sidecar';
 import { recentsStore } from './recents.svelte';
+import * as Sentry from '@sentry/svelte';
+import { analytics } from '$lib/services/analytics';
 
 // Document state
 let currentPath = $state<string | null>(null);
@@ -51,7 +53,11 @@ async function loadDocument(path: string): Promise<void> {
 
     // Add to recent files
     recentsStore.addRecent(path);
+
+    // Track document opened
+    analytics.track('document_opened', { stage: sidecarData.stage });
   } catch (e) {
+    Sentry.captureException(e);
     error = e instanceof Error ? e.message : String(e);
     throw e;
   } finally {
@@ -68,6 +74,7 @@ async function saveDocument(): Promise<void> {
     isDirty = false;
     error = null;
   } catch (e) {
+    Sentry.captureException(e);
     error = e instanceof Error ? e.message : String(e);
     throw e;
   }
@@ -83,6 +90,7 @@ async function saveSidecar(): Promise<void> {
     await invoke('write_sidecar', { mdPath: currentPath, sidecar });
     error = null;
   } catch (e) {
+    Sentry.captureException(e);
     error = e instanceof Error ? e.message : String(e);
     throw e;
   }
@@ -155,7 +163,11 @@ async function createDocument(path: string): Promise<void> {
 
     // Load it (this will create the sidecar)
     await loadDocument(path);
+
+    // Track document created
+    analytics.track('document_created');
   } catch (e) {
+    Sentry.captureException(e);
     error = e instanceof Error ? e.message : String(e);
     throw e;
   } finally {
@@ -253,6 +265,7 @@ async function renameDocument(newFilename: string): Promise<void> {
 
     error = null;
   } catch (e) {
+    Sentry.captureException(e);
     error = e instanceof Error ? e.message : String(e);
     throw e;
   }
