@@ -1,8 +1,6 @@
 <script lang="ts">
   import { authStore } from '$lib/stores/auth.svelte';
-
-  // Stripe price ID for Pro plan
-  const PRO_PRICE_ID = 'price_0SsSKTEu2QaDui1JQS0gYvWA';
+  import { PRO_PRICE_ID, PRO_MONTHLY_PRICE, FREE_MESSAGE_LIMIT } from '$lib/config/billing';
 
   let isLoading = $state(false);
   let error = $state<string | null>(null);
@@ -89,7 +87,7 @@
     <div class="current-plan free">
       <div class="plan-label">Current Plan</div>
       <h3>Free</h3>
-      <p class="plan-limit">50 messages per month</p>
+      <p class="plan-limit">{FREE_MESSAGE_LIMIT} messages per month</p>
     </div>
 
     <!-- Upgrade Promotion -->
@@ -111,7 +109,7 @@
       </div>
       <div class="promo-benefit">
         <span class="benefit-highlight">Unlimited messages</span>
-        <span class="benefit-price">$20/month</span>
+        <span class="benefit-price">${PRO_MONTHLY_PRICE}/month</span>
       </div>
       <button class="upgrade-button" onclick={handleUpgrade} disabled={isLoading}>
         {#if isLoading}

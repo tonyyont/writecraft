@@ -4,6 +4,7 @@
   import BillingSection from './BillingSection.svelte';
   import AppearanceSection from './AppearanceSection.svelte';
   import UsageBar from './UsageBar.svelte';
+  import ProBadge from '$lib/components/ProBadge.svelte';
 
   interface Props {
     open: boolean;
@@ -78,9 +79,11 @@
             </span>
             <span class="user-email">{authStore.user?.email}</span>
           </div>
-          <div class="plan-badge {authStore.plan}">
-            {authStore.plan === 'pro' ? 'Pro' : 'Free'}
-          </div>
+          {#if authStore.plan === 'pro'}
+            <ProBadge />
+          {:else}
+            <div class="plan-badge free">Free</div>
+          {/if}
         </div>
 
         <!-- Usage bar -->
@@ -255,11 +258,6 @@
   .plan-badge.free {
     background: rgba(255, 255, 255, 0.1);
     color: #888;
-  }
-
-  .plan-badge.pro {
-    background: rgba(218, 119, 86, 0.2);
-    color: #da7756;
   }
 
   .tabs {

@@ -3,9 +3,14 @@
   import { chatStore } from '$lib/stores/chat.svelte';
   import { documentStore } from '$lib/stores/document.svelte';
   import { recentsStore } from '$lib/stores/recents.svelte';
+  import { authStore } from '$lib/stores/auth.svelte';
   import { sendMessage, type AgentCallbacks } from '$lib/services/agent';
+  import { UPGRADE_BANNER_THRESHOLD } from '$lib/config/billing';
   import MessageList from './MessageList.svelte';
   import InputArea from './InputArea.svelte';
+  import UpgradeBanner from './UpgradeBanner.svelte';
+  import UsageLimitBanner from './UsageLimitBanner.svelte';
+  import UpgradeModal from '$lib/components/Settings/UpgradeModal.svelte';
 
   // Panel visibility state
   let isOpen = $state(true);
@@ -14,6 +19,28 @@
   let errorMessage = $state<string | null>(null);
   // Track if error is related to missing/invalid API key
   let isApiKeyError = $state(false);
+
+  // Upgrade modal state
+  let showUpgradeModal = $state(false);
+  // Track if upgrade banner has been dismissed this session
+  let upgradeBannerDismissed = $state(false);
+
+  // Derived state for upgrade prompts
+  let showUpgradeBanner = $derived(
+    authStore.plan === 'free' &&
+      authStore.messagesRemaining <= UPGRADE_BANNER_THRESHOLD &&
+      authStore.messagesRemaining > 0 &&
+      !upgradeBannerDismissed
+  );
+  let showLimitReached = $derived(!authStore.canSendMessage && authStore.plan === 'free');
+
+  // Check if error is a rate limit error
+  let isRateLimitError = $derived(
+    errorMessage !== null &&
+      (errorMessage.toLowerCase().includes('rate limit') ||
+        errorMessage.toLowerCase().includes('limit reached') ||
+        errorMessage.toLowerCase().includes('monthly limit'))
+  );
 
   // Open settings dialog (emit event that MenuBar listens to)
   async function openSettings() {
@@ -134,7 +161,14 @@
     <div class="blank-content">
       <!-- Logo/Icon -->
       <div class="blank-logo">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <svg
+          width="40"
+          height="40"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
           <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
           <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
           <path d="M2 2l7.586 7.586"></path>
@@ -179,16 +213,28 @@
 
       <!-- Suggestion chips -->
       <div class="suggestions">
-        <button class="suggestion-chip" onclick={() => handleBlankStateSend('Help me write a blog post')}>
+        <button
+          class="suggestion-chip"
+          onclick={() => handleBlankStateSend('Help me write a blog post')}
+        >
           Blog post
         </button>
-        <button class="suggestion-chip" onclick={() => handleBlankStateSend('Help me draft an email')}>
+        <button
+          class="suggestion-chip"
+          onclick={() => handleBlankStateSend('Help me draft an email')}
+        >
           Email
         </button>
-        <button class="suggestion-chip" onclick={() => handleBlankStateSend('Help me write documentation')}>
+        <button
+          class="suggestion-chip"
+          onclick={() => handleBlankStateSend('Help me write documentation')}
+        >
           Documentation
         </button>
-        <button class="suggestion-chip" onclick={() => handleBlankStateSend('Help me write a story')}>
+        <button
+          class="suggestion-chip"
+          onclick={() => handleBlankStateSend('Help me write a story')}
+        >
           Story
         </button>
       </div>
@@ -199,7 +245,13 @@
           <div class="recents-list">
             {#each recentsStore.files.slice(0, 5) as file (file.path)}
               <button class="recent-item" onclick={() => handleOpenRecent(file.path)}>
-                <svg class="recent-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <svg
+                  class="recent-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                >
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                   <polyline points="14 2 14 8 20 8"></polyline>
                 </svg>
@@ -233,7 +285,7 @@
           streamingMessageId={chatStore.streamingMessageId}
         />
 
-        {#if errorMessage}
+        {#if errorMessage && !isRateLimitError}
           <div class="error-banner" class:api-key-error={isApiKeyError}>
             <div class="error-content">
               <span class="error-text">
@@ -262,7 +314,17 @@
           </div>
         {/if}
 
-        <InputArea onSend={handleSend} />
+        {#if showUpgradeBanner}
+          <div class="upgrade-banner-wrapper">
+            <UpgradeBanner onDismiss={() => (upgradeBannerDismissed = true)} />
+          </div>
+        {/if}
+
+        {#if showLimitReached}
+          <UsageLimitBanner onLearnMore={() => (showUpgradeModal = true)} />
+        {:else}
+          <InputArea onSend={handleSend} />
+        {/if}
 
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div
@@ -292,6 +354,8 @@
     {/if}
   </div>
 {/if}
+
+<UpgradeModal open={showUpgradeModal} onClose={() => (showUpgradeModal = false)} />
 
 <style>
   /* Blank state styles - full-screen centered experience */
@@ -355,7 +419,9 @@
     border-radius: 16px;
     background: var(--color-bg-elevated);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
   }
 
   .blank-input-wrapper :global(.input-area:focus-within) {
@@ -689,5 +755,9 @@
     .error-banner.api-key-error .error-text {
       color: #fcd34d;
     }
+  }
+
+  .upgrade-banner-wrapper {
+    padding: 0 12px;
   }
 </style>
