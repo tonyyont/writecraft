@@ -12,28 +12,57 @@
 
   let listRef: HTMLDivElement | null = $state(null);
 
-  // Track scroll position to implement "stay in place" behavior
-  let userIsAtBottom = $state(true);
+  // For "New messages" indicator
   let hasNewContent = $state(false);
+
+  // Track message count to detect NEW messages (not content updates during streaming)
+  let lastMessageCount = $state(0);
+  let lastUserMessageId = $state<string | null>(null);
+  let hasInitiallyScrolled = $state(false);
 
   // Track previously rendered word count for streaming messages
   let previousWordCounts = $state<Map<string, number>>(new Map());
 
-  // Auto-scroll to bottom only when user is at the bottom (stay-in-place behavior)
+  // Initial scroll when loading existing conversation (one-time only)
   $effect(() => {
-    if (messages.length > 0 && listRef) {
-      if (userIsAtBottom) {
-        // User is at bottom, auto-scroll to keep them there
-        requestAnimationFrame(() => {
-          if (listRef) {
-            listRef.scrollTop = listRef.scrollHeight;
-          }
-        });
-      } else {
-        // User has scrolled up, indicate new content is available
+    if (messages.length > 0 && listRef && !hasInitiallyScrolled) {
+      requestAnimationFrame(() => {
+        if (listRef) {
+          listRef.scrollTop = listRef.scrollHeight;
+          hasInitiallyScrolled = true;
+        }
+      });
+    }
+  });
+
+  // Scroll to bottom when USER sends a new message
+  $effect(() => {
+    const userMessages = messages.filter((m) => m.role === 'user');
+    const lastUserMsg = userMessages[userMessages.length - 1];
+
+    if (lastUserMsg && lastUserMsg.id !== lastUserMessageId && listRef) {
+      lastUserMessageId = lastUserMsg.id;
+      requestAnimationFrame(() => {
+        if (listRef) {
+          listRef.scrollTop = listRef.scrollHeight;
+        }
+      });
+    }
+  });
+
+  // Show "New messages" indicator when assistant messages arrive while scrolled up
+  $effect(() => {
+    const currentCount = messages.length;
+    if (currentCount > lastMessageCount && listRef) {
+      const threshold = 50;
+      const atBottom = listRef.scrollHeight - listRef.scrollTop - listRef.clientHeight < threshold;
+      const lastMsg = messages[messages.length - 1];
+      // Only show indicator for assistant messages when user is scrolled up
+      if (!atBottom && lastMsg?.role === 'assistant') {
         hasNewContent = true;
       }
     }
+    lastMessageCount = currentCount;
   });
 
   // Check if message should be hidden (tool_result messages)
@@ -143,12 +172,11 @@
     }
   });
 
-  // Handle scroll events to track user position
+  // Handle scroll events to clear "new content" indicator when user scrolls to bottom
   function handleScroll() {
     if (!listRef) return;
-    const threshold = 50; // pixels from bottom to consider "at bottom"
+    const threshold = 50;
     const atBottom = listRef.scrollHeight - listRef.scrollTop - listRef.clientHeight < threshold;
-    userIsAtBottom = atBottom;
     if (atBottom) {
       hasNewContent = false;
     }
@@ -159,7 +187,6 @@
     if (listRef) {
       listRef.scrollTo({ top: listRef.scrollHeight, behavior: 'smooth' });
       hasNewContent = false;
-      userIsAtBottom = true;
     }
   }
 
@@ -237,7 +264,7 @@
     {/each}
   {/if}
 
-  {#if hasNewContent && !userIsAtBottom}
+  {#if hasNewContent}
     <button class="scroll-to-bottom" onclick={scrollToBottom}>
       <svg
         width="16"
