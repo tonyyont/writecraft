@@ -106,6 +106,7 @@ class AuthStore {
   isLoading = $state(true);
   isAuthenticating = $state(false);
   error = $state<string | null>(null);
+  showUpgradeSuccess = $state(false);
 
   // Derived
   get isAuthenticated(): boolean {
@@ -153,6 +154,14 @@ class AuthStore {
     return this.messagesRemaining > 0;
   }
 
+  get usageResetDate(): string {
+    if (!this.usage?.periodEnd) return '';
+    return new Date(this.usage.periodEnd).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+    });
+  }
+
   // ============================================
   // Initialization
   // ============================================
@@ -194,6 +203,12 @@ class AuthStore {
       else if (url.startsWith('fizz://billing/')) {
         // Refresh subscription info after billing action
         await this.fetchSubscriptionInfo();
+
+        // Show success modal if upgrade was successful
+        if (url.includes('success')) {
+          this.showUpgradeSuccess = true;
+          analytics.track('subscription_upgraded', { plan: 'pro' });
+        }
       }
     });
   }
@@ -416,6 +431,10 @@ class AuthStore {
 
   clearError(): void {
     this.error = null;
+  }
+
+  dismissUpgradeSuccess(): void {
+    this.showUpgradeSuccess = false;
   }
 }
 

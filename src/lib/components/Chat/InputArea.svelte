@@ -1,11 +1,13 @@
 <script lang="ts">
   import { chatStore } from '$lib/stores/chat.svelte';
+  import { authStore } from '$lib/stores/auth.svelte';
 
   interface Props {
     onSend: (message: string) => void;
+    placeholder?: string;
   }
 
-  let { onSend }: Props = $props();
+  let { onSend, placeholder = 'Type a message...' }: Props = $props();
 
   let inputText = $state('');
   let textareaRef: HTMLTextAreaElement | null = $state(null);
@@ -60,7 +62,16 @@
     }
   }
 
-  let canSend = $derived(inputText.trim().length > 0 && !chatStore.isLoading);
+  let canSend = $derived(
+    inputText.trim().length > 0 && !chatStore.isLoading && authStore.canSendMessage
+  );
+
+  // Dynamic placeholder based on usage
+  let dynamicPlaceholder = $derived(
+    !authStore.canSendMessage && authStore.plan === 'free'
+      ? 'Upgrade to continue writing...'
+      : placeholder
+  );
 </script>
 
 <div class="input-area">
@@ -70,8 +81,8 @@
       value={inputText}
       oninput={handleInput}
       onkeydown={handleKeydown}
-      placeholder="Type a message..."
-      disabled={chatStore.isLoading}
+      placeholder={dynamicPlaceholder}
+      disabled={chatStore.isLoading || !authStore.canSendMessage}
       rows="1"
     ></textarea>
     <button

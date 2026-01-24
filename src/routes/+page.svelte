@@ -4,6 +4,7 @@
   import MetadataPanel from '$lib/components/MetadataPanel.svelte';
   import Editor from '$lib/components/Editor/Editor.svelte';
   import ChatPanel from '$lib/components/Chat/ChatPanel.svelte';
+  import UpgradeSuccessModal from '$lib/components/Settings/UpgradeSuccessModal.svelte';
   import { AuthGuard } from '$lib/components/Auth';
   import { documentStore } from '$lib/stores/document.svelte';
   import { authStore } from '$lib/stores/auth.svelte';
@@ -71,6 +72,12 @@
     </div>
   {/snippet}
 </AuthGuard>
+
+<!-- Global upgrade success modal -->
+<UpgradeSuccessModal
+  open={authStore.showUpgradeSuccess}
+  onClose={() => authStore.dismissUpgradeSuccess()}
+/>
 
 <style>
   :global(html, body) {

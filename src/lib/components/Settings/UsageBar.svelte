@@ -32,7 +32,10 @@
     <p class="usage-exhausted">
       You've used all your messages this month.
       {#if authStore.plan === 'free'}
-        <button class="upgrade-link" onclick={() => authStore.openCheckout('price_pro_monthly')}>
+        <button
+          class="upgrade-link"
+          onclick={() => authStore.openCheckout('price_0SsSKTEu2QaDui1JQS0gYvWA')}
+        >
           Upgrade to Pro
         </button>
       {:else}
