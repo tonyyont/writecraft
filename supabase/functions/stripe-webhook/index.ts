@@ -6,7 +6,7 @@ import { createServiceClient } from '../_shared/supabase.ts';
 import Stripe from 'https://esm.sh/stripe@14.12.0?target=deno';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
-  apiVersion: '2023-10-16',
+  apiVersion: '2024-12-18.acacia',
   httpClient: Stripe.createFetchHttpClient(),
 });
 
@@ -20,13 +20,21 @@ const PLAN_CONFIG = {
 
 // Map Stripe price IDs to plan IDs
 const PRICE_TO_PLAN: Record<string, 'free' | 'pro'> = {
-  // These will be your actual Stripe price IDs
-  // price_free: 'free',
-  // price_pro_monthly: 'pro',
+  // Pro Plan - $1/month (Live mode)
+  price_0SsSKTEu2QaDui1JQS0gYvWA: 'pro',
 };
 
 function getPlanFromPriceId(priceId: string): 'free' | 'pro' {
-  return PRICE_TO_PLAN[priceId] ?? 'free';
+  // Check if price ID maps to a known plan
+  const plan = PRICE_TO_PLAN[priceId];
+  if (plan) {
+    return plan;
+  }
+
+  // For any unknown price ID that's not free, assume it's a paid plan (pro)
+  // This handles cases where new prices are added in Stripe
+  console.log(`Unknown price ID: ${priceId}, defaulting to pro`);
+  return 'pro';
 }
 
 Deno.serve(async (req) => {
@@ -123,8 +131,15 @@ async function handleCheckoutCompleted(
 
   // Get subscription details from Stripe
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  const priceId = subscription.items.data[0]?.price.id;
+  const subscriptionItem = subscription.items.data[0];
+  const priceId = subscriptionItem?.price.id;
   const planId = getPlanFromPriceId(priceId);
+
+  // Get period dates from subscription item (newer API) or root (older API)
+  const currentPeriodStart =
+    (subscriptionItem as any)?.current_period_start ?? (subscription as any).current_period_start;
+  const currentPeriodEnd =
+    (subscriptionItem as any)?.current_period_end ?? (subscription as any).current_period_end;
 
   // Update subscription record
   const { error } = await supabase
@@ -134,8 +149,8 @@ async function handleCheckoutCompleted(
       stripe_subscription_id: subscriptionId,
       plan_id: planId,
       status: 'active',
-      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      current_period_start: new Date(currentPeriodStart * 1000).toISOString(),
+      current_period_end: new Date(currentPeriodEnd * 1000).toISOString(),
       cancel_at_period_end: subscription.cancel_at_period_end,
     })
     .eq('user_id', userId);
@@ -156,8 +171,20 @@ async function handleSubscriptionUpdated(
   subscription: Stripe.Subscription
 ) {
   const customerId = subscription.customer as string;
-  const priceId = subscription.items.data[0]?.price.id;
+  const subscriptionItem = subscription.items.data[0];
+  const priceId = subscriptionItem?.price.id;
   const planId = getPlanFromPriceId(priceId);
+
+  // Get period dates from the subscription item (where they live in newer API versions)
+  // Fall back to subscription root for older API versions
+  const currentPeriodStart =
+    (subscriptionItem as any)?.current_period_start ?? (subscription as any).current_period_start;
+  const currentPeriodEnd =
+    (subscriptionItem as any)?.current_period_end ?? (subscription as any).current_period_end;
+
+  // Get user ID from subscription metadata (set during checkout creation)
+  // This handles the race condition where this event arrives before checkout.session.completed
+  const userId = subscription.metadata?.supabase_user_id;
 
   // Map Stripe status to our status
   let status: 'active' | 'canceled' | 'past_due' | 'trialing';
@@ -180,19 +207,41 @@ async function handleSubscriptionUpdated(
   }
 
   // Update subscription record
-  const { data, error } = await supabase
-    .from('subscriptions')
-    .update({
-      stripe_subscription_id: subscription.id,
-      plan_id: planId,
-      status,
-      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-      cancel_at_period_end: subscription.cancel_at_period_end,
-    })
-    .eq('stripe_customer_id', customerId)
-    .select('user_id')
-    .single();
+  // Primary: Use user_id from metadata (reliable, handles race condition)
+  // Fallback: Use stripe_customer_id (for older subscriptions without metadata)
+  let data, error;
+
+  if (userId) {
+    ({ data, error } = await supabase
+      .from('subscriptions')
+      .update({
+        stripe_customer_id: customerId, // Also set this for future lookups
+        stripe_subscription_id: subscription.id,
+        plan_id: planId,
+        status,
+        current_period_start: new Date(currentPeriodStart * 1000).toISOString(),
+        current_period_end: new Date(currentPeriodEnd * 1000).toISOString(),
+        cancel_at_period_end: subscription.cancel_at_period_end,
+      })
+      .eq('user_id', userId)
+      .select('user_id')
+      .single());
+  } else {
+    // Fallback for subscriptions without metadata
+    ({ data, error } = await supabase
+      .from('subscriptions')
+      .update({
+        stripe_subscription_id: subscription.id,
+        plan_id: planId,
+        status,
+        current_period_start: new Date(currentPeriodStart * 1000).toISOString(),
+        current_period_end: new Date(currentPeriodEnd * 1000).toISOString(),
+        cancel_at_period_end: subscription.cancel_at_period_end,
+      })
+      .eq('stripe_customer_id', customerId)
+      .select('user_id')
+      .single());
+  }
 
   if (error) {
     console.error('Error updating subscription:', error);
@@ -204,7 +253,9 @@ async function handleSubscriptionUpdated(
     await updateUsageLimit(supabase, data.user_id, planId);
   }
 
-  console.log(`Subscription updated for customer ${customerId}, plan: ${planId}, status: ${status}`);
+  console.log(
+    `Subscription updated for user ${data?.user_id ?? customerId}, plan: ${planId}, status: ${status}`
+  );
 }
 
 async function handleSubscriptionDeleted(
@@ -212,19 +263,37 @@ async function handleSubscriptionDeleted(
   subscription: Stripe.Subscription
 ) {
   const customerId = subscription.customer as string;
+  const userId = subscription.metadata?.supabase_user_id;
 
   // Downgrade to free plan
-  const { data, error } = await supabase
-    .from('subscriptions')
-    .update({
-      plan_id: 'free',
-      status: 'canceled',
-      stripe_subscription_id: null,
-      cancel_at_period_end: false,
-    })
-    .eq('stripe_customer_id', customerId)
-    .select('user_id')
-    .single();
+  // Primary: Use user_id from metadata; Fallback: stripe_customer_id
+  let data, error;
+
+  if (userId) {
+    ({ data, error } = await supabase
+      .from('subscriptions')
+      .update({
+        plan_id: 'free',
+        status: 'canceled',
+        stripe_subscription_id: null,
+        cancel_at_period_end: false,
+      })
+      .eq('user_id', userId)
+      .select('user_id')
+      .single());
+  } else {
+    ({ data, error } = await supabase
+      .from('subscriptions')
+      .update({
+        plan_id: 'free',
+        status: 'canceled',
+        stripe_subscription_id: null,
+        cancel_at_period_end: false,
+      })
+      .eq('stripe_customer_id', customerId)
+      .select('user_id')
+      .single());
+  }
 
   if (error) {
     console.error('Error handling subscription deletion:', error);
@@ -236,7 +305,7 @@ async function handleSubscriptionDeleted(
     await updateUsageLimit(supabase, data.user_id, 'free');
   }
 
-  console.log(`Subscription deleted for customer ${customerId}, downgraded to free`);
+  console.log(`Subscription deleted for user ${data?.user_id ?? customerId}, downgraded to free`);
 }
 
 async function handlePaymentFailed(
@@ -285,20 +354,22 @@ async function handleInvoicePaid(
   const periodEnd = new Date(periodStart);
   periodEnd.setUTCMonth(periodEnd.getUTCMonth() + 1);
 
-  const messageLimit = PLAN_CONFIG[subscriptionData.plan_id as keyof typeof PLAN_CONFIG]?.messageLimit ?? 50;
+  const messageLimit =
+    PLAN_CONFIG[subscriptionData.plan_id as keyof typeof PLAN_CONFIG]?.messageLimit ?? 50;
 
   // Upsert usage record for new period
-  const { error: usageError } = await supabase
-    .from('usage')
-    .upsert({
+  const { error: usageError } = await supabase.from('usage').upsert(
+    {
       user_id: subscriptionData.user_id,
       period_start: periodStart.toISOString(),
       period_end: periodEnd.toISOString(),
       message_count: 0,
       message_limit: messageLimit,
-    }, {
+    },
+    {
       onConflict: 'user_id,period_start',
-    });
+    }
+  );
 
   if (usageError) {
     console.error('Error resetting usage:', usageError);
