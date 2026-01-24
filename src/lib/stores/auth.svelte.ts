@@ -201,13 +201,15 @@ class AuthStore {
       }
       // Handle billing callbacks
       else if (url.startsWith('fizz://billing/')) {
-        // Refresh subscription info after billing action
-        await this.fetchSubscriptionInfo();
-
-        // Show success modal if upgrade was successful
         if (url.includes('success')) {
+          // Refresh subscription info with retry logic
+          // The webhook may take a moment to process
+          await this.refreshSubscriptionWithRetry();
           this.showUpgradeSuccess = true;
           analytics.track('subscription_upgraded', { plan: 'pro' });
+        } else {
+          // For cancel or other billing callbacks, just refresh once
+          await this.fetchSubscriptionInfo();
         }
       }
     });
@@ -380,6 +382,29 @@ class AuthStore {
       console.error('Failed to fetch subscription info:', e);
       Sentry.captureException(e);
     }
+  }
+
+  /**
+   * Refresh subscription info with retry logic.
+   * Used after successful payment when webhook may still be processing.
+   */
+  async refreshSubscriptionWithRetry(maxAttempts = 5, delayMs = 1500): Promise<void> {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      await this.fetchSubscriptionInfo();
+
+      // Check if we now have Pro status
+      if (this.plan === 'pro') {
+        return;
+      }
+
+      // Wait before next attempt (except on last attempt)
+      if (attempt < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+
+    // If we still don't see Pro after all retries, log a warning
+    console.warn('Subscription still showing as free after max retries. Webhook may have failed.');
   }
 
   async openCheckout(priceId: string): Promise<void> {

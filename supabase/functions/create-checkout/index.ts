@@ -97,9 +97,23 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error('Error creating checkout session:', error);
-    return new Response(JSON.stringify({ error: 'Failed to create checkout session' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+
+    // Extract more detailed error info for debugging
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const stripeError =
+      (error as { type?: string; code?: string })?.type ||
+      (error as { type?: string; code?: string })?.code;
+
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to create checkout session',
+        details: errorMessage,
+        stripeErrorType: stripeError || null,
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   }
 });
