@@ -5,12 +5,21 @@ import { corsHeaders, handleCors } from '../_shared/cors.ts';
 import { createServiceClient } from '../_shared/supabase.ts';
 import Stripe from 'https://esm.sh/stripe@14.12.0?target=deno';
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
+// Validate required environment variables at startup
+const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+
+if (!stripeSecretKey) {
+  throw new Error('STRIPE_SECRET_KEY environment variable is required');
+}
+if (!webhookSecret) {
+  throw new Error('STRIPE_WEBHOOK_SECRET environment variable is required');
+}
+
+const stripe = new Stripe(stripeSecretKey, {
   apiVersion: '2024-12-18.acacia',
   httpClient: Stripe.createFetchHttpClient(),
 });
-
-const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
 
 // Plan configuration
 const PLAN_CONFIG = {
@@ -125,8 +134,10 @@ async function handleCheckoutCompleted(
   const subscriptionId = session.subscription as string;
 
   if (!userId) {
-    console.error('No user ID in checkout session');
-    return;
+    console.error('No user ID (client_reference_id) in checkout session:', session.id);
+    throw new Error(
+      `Checkout session ${session.id} missing client_reference_id - user will not be upgraded`
+    );
   }
 
   // Get subscription details from Stripe
@@ -202,7 +213,14 @@ async function handleSubscriptionUpdated(
     case 'trialing':
       status = 'trialing';
       break;
+    case 'incomplete':
+    case 'incomplete_expired':
+      // Payment failed during initial checkout - treat as canceled
+      console.log(`Subscription ${subscription.id} has incomplete status: ${subscription.status}`);
+      status = 'canceled';
+      break;
     default:
+      console.warn(`Unknown subscription status: ${subscription.status}, defaulting to active`);
       status = 'active';
   }
 
@@ -343,16 +361,27 @@ async function handleInvoicePaid(
 
   if (subError || !subscriptionData) {
     console.error('Error finding subscription for invoice:', subError);
-    return;
+    throw new Error(
+      `Cannot find subscription for customer ${customerId} - invoice paid but usage not reset`
+    );
   }
 
-  // Reset usage for new billing period
-  const periodStart = new Date();
-  periodStart.setUTCDate(1);
-  periodStart.setUTCHours(0, 0, 0, 0);
+  // Use invoice period dates if available, otherwise fall back to subscription period
+  let periodStart: Date;
+  let periodEnd: Date;
 
-  const periodEnd = new Date(periodStart);
-  periodEnd.setUTCMonth(periodEnd.getUTCMonth() + 1);
+  if (invoice.period_start && invoice.period_end) {
+    // Use invoice billing period (most accurate)
+    periodStart = new Date(invoice.period_start * 1000);
+    periodEnd = new Date(invoice.period_end * 1000);
+  } else {
+    // Fallback: calculate from current date (calendar month)
+    periodStart = new Date();
+    periodStart.setUTCDate(1);
+    periodStart.setUTCHours(0, 0, 0, 0);
+    periodEnd = new Date(periodStart);
+    periodEnd.setUTCMonth(periodEnd.getUTCMonth() + 1);
+  }
 
   const messageLimit =
     PLAN_CONFIG[subscriptionData.plan_id as keyof typeof PLAN_CONFIG]?.messageLimit ?? 50;
