@@ -1,6 +1,12 @@
 <script lang="ts">
   import { authStore } from '$lib/stores/auth.svelte';
 
+  interface Props {
+    onUpgradeClick?: () => void;
+  }
+
+  let { onUpgradeClick }: Props = $props();
+
   let progressColor = $derived.by(() => {
     const percent = authStore.usagePercent;
     if (percent >= 90) return '#ef4444'; // red
@@ -32,12 +38,7 @@
     <p class="usage-exhausted">
       You've used all your messages this month.
       {#if authStore.plan === 'free'}
-        <button
-          class="upgrade-link"
-          onclick={() => authStore.openCheckout('price_0SsSKTEu2QaDui1JQS0gYvWA')}
-        >
-          Upgrade to Pro
-        </button>
+        <button class="upgrade-link" onclick={onUpgradeClick}> Upgrade to Pro </button>
       {:else}
         Resets on {new Date(authStore.usage?.periodEnd ?? '').toLocaleDateString()}
       {/if}

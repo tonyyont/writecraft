@@ -791,9 +791,30 @@ pub async fn get_checkout_url(price_id: String) -> Result<String, AuthError> {
         .map_err(|e| AuthError::Network(e.to_string()))?;
 
     if !response.status().is_success() {
-        return Err(AuthError::AuthFailed(
-            "Failed to create checkout session".to_string(),
-        ));
+        // Try to get detailed error from response
+        #[derive(Deserialize)]
+        struct ErrorResponse {
+            error: Option<String>,
+            details: Option<String>,
+            #[serde(rename = "stripeErrorType")]
+            stripe_error_type: Option<String>,
+        }
+
+        let error_msg = match response.json::<ErrorResponse>().await {
+            Ok(err) => {
+                let mut msg = err.error.unwrap_or_else(|| "Unknown error".to_string());
+                if let Some(details) = err.details {
+                    msg.push_str(&format!(" - {}", details));
+                }
+                if let Some(stripe_type) = err.stripe_error_type {
+                    msg.push_str(&format!(" (Stripe: {})", stripe_type));
+                }
+                msg
+            }
+            Err(_) => "Failed to create checkout session".to_string(),
+        };
+
+        return Err(AuthError::AuthFailed(error_msg));
     }
 
     #[derive(Deserialize)]

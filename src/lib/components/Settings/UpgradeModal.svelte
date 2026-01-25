@@ -10,12 +10,17 @@
   let { open, onClose }: Props = $props();
 
   let isLoading = $state(false);
+  let error = $state<string | null>(null);
 
   async function handleUpgrade() {
     isLoading = true;
+    error = null;
     try {
       await authStore.openCheckout(PRO_PRICE_ID);
       onClose();
+    } catch (e) {
+      console.error('Checkout failed:', e);
+      error = 'Failed to open checkout. Please try again.';
     } finally {
       isLoading = false;
     }
@@ -172,6 +177,9 @@
               Upgrade Now
             {/if}
           </button>
+          {#if error}
+            <p class="error-message">{error}</p>
+          {/if}
         </div>
       </div>
 
@@ -423,6 +431,16 @@
     to {
       transform: rotate(360deg);
     }
+  }
+
+  .error-message {
+    margin: 8px 0 0;
+    padding: 8px 12px;
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: 6px;
+    font-size: 13px;
+    color: #ef4444;
+    text-align: center;
   }
 
   @media (max-width: 480px) {

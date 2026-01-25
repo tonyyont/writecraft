@@ -9,11 +9,15 @@
   let { onLearnMore }: Props = $props();
 
   let isLoading = $state(false);
+  let error = $state<string | null>(null);
 
   // Format the reset date
   let resetDate = $derived.by(() => {
     if (!authStore.usage?.periodEnd) return '';
-    return new Date(authStore.usage.periodEnd).toLocaleDateString('en-US', {
+    const date = new Date(authStore.usage.periodEnd);
+    // Check for invalid date
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('en-US', {
       month: 'long',
       day: 'numeric',
     });
@@ -21,8 +25,12 @@
 
   async function handleUpgrade() {
     isLoading = true;
+    error = null;
     try {
       await authStore.openCheckout(PRO_PRICE_ID);
+    } catch (e) {
+      console.error('Checkout failed:', e);
+      error = 'Failed to open checkout. Please try again.';
     } finally {
       isLoading = false;
     }
@@ -64,6 +72,9 @@
     </button>
     {#if onLearnMore}
       <button class="learn-more-button" onclick={onLearnMore}> Learn More </button>
+    {/if}
+    {#if error}
+      <p class="error-message">{error}</p>
     {/if}
   </div>
 </div>
@@ -197,5 +208,16 @@
     to {
       transform: rotate(360deg);
     }
+  }
+
+  .error-message {
+    width: 100%;
+    margin: 0;
+    padding: 8px 12px;
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: 6px;
+    font-size: 13px;
+    color: #ef4444;
+    text-align: center;
   }
 </style>

@@ -87,7 +87,7 @@
         </div>
 
         <!-- Usage bar -->
-        <UsageBar />
+        <UsageBar onUpgradeClick={() => (activeTab = 'billing')} />
 
         <!-- Tabs -->
         <div class="tabs">
